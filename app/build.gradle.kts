@@ -1,18 +1,21 @@
+// build.gradle.kts (Module :app)
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    // Keep this line - it's correctly applying the Compose Compiler plugin for Kotlin 2.0
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 android {
     namespace = "com.example.baraclan.mentalchallengemath_namepending"
-    compileSdk {
-        version = release(36)
-    }
+    // Use compileSdk 34 for now for stability, or 35 if you prefer a newer one that is stable
+    compileSdk =36
 
     defaultConfig {
         applicationId = "com.example.baraclan.mentalchallengemath_namepending"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34 // Match compileSdk
         versionCode = 1
         versionName = "1.0"
 
@@ -38,27 +41,43 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.9" // or the latest version
-    }
-
+    // REMOVE THIS ENTIRE BLOCK:
+    // composeOptions {
+    //     kotlinCompilerExtensionVersion = "1.5.9" // Or 1.5.11, etc.
+    // }
+    // The 'org.jetbrains.kotlin.plugin.compose' handles this for Kotlin 2.0
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
     implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
+    // Optionally remove if not using XML layouts:
+    // implementation(libs.androidx.constraintlayout)
+    // implementation(libs.material)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("androidx.compose.ui:ui:1.5.4")
-    implementation("androidx.compose.material:material:1.5.4")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.compose.runtime:runtime:1.5.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.5.4")
+    // === Jetpack Compose Dependencies ===
+
+    // Use a recent Compose BOM, e.g., 2024.02.00 is a good choice.
+    // Ensure this BOM is compatible with Kotlin 2.0 (it usually is if it's recent).
+    val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+
+    implementation("androidx.activity:activity-compose") // Should be covered by BOM
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0") // Keep explicit if not covered by BOM
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("com.google.android.material:material:1.11.0")
+
 }
