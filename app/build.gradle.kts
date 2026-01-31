@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.material3)
 
     // Test dependencies
     testImplementation(libs.junit)
@@ -92,10 +93,11 @@ dependencies {
 
     // --- Optional (remove if not using XML layouts or legacy Material Design for Views) ---
     // If your app is purely Compose, these are generally not needed:
-     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-     implementation("com.google.android.material:material:1.2.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.android.material:material:1.2.0")
     implementation ("androidx.compose.material:material-ripple:1.10.2")
     // If you need them for specific reasons (e.g., hybrid app), keep them.
     // Given your app structure, I recommend removing them for a pure Compose setup.
-}
 
+    implementation ("androidx.compose.material:material-icons-extended:1.6.0")
+}

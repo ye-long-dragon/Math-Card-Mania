@@ -1,25 +1,19 @@
 package com.example.baraclan.mentalchallengemath_namepending.models
 
-import com.example.baraclan.mentalchallengemath_namepending.models.card
+import com.example.baraclan.mentalchallengemath_namepending.models.*
 
-class deck(name: String) : CardContainer(name) {
-    // Deck-specific methods can go here
+class deck(name: String) : cardContainer(name) {
     fun shuffle() {
-        println("$name: Shuffling the deck...")
-        // In a real implementation, you'd convert the map to a list of individual cards, shuffle, then rebuild
-        // For simplicity, we'll just print for now.
+        // Actual shuffling logic would go here
     }
 
-    fun drawCard(): card? {
+    fun drawCard(): cardGame? {
         if (isEmpty()) {
-            println("$name: Deck is empty, cannot draw.")
             return null
         }
-        // A simple "draw" would be to pick a random card, remove one, and return it.
-        val randomCardEntry = cards.entries.randomOrNull() ?: return null
+        val randomCardEntry = getAllCardsWithCounts().entries.randomOrNull() ?: return null
         val cardToDraw = randomCardEntry.key
-        removeCard(cardToDraw, 1) // Remove one instance of the drawn card
-        println("$name: Drew 1 x ${cardToDraw.name}.")
+        removeCard(cardToDraw, 1)
         return cardToDraw
     }
 }
