@@ -54,7 +54,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
-    implementation(libs.androidx.material3)
 
     // Test dependencies
     testImplementation(libs.junit)
@@ -98,7 +97,5 @@ dependencies {
     implementation ("androidx.compose.material:material-ripple:1.10.2")
     // If you need them for specific reasons (e.g., hybrid app), keep them.
     // Given your app structure, I recommend removing them for a pure Compose setup.
-
-    implementation ("androidx.compose.material:material-icons-extended:1.6.0")
 }
 
