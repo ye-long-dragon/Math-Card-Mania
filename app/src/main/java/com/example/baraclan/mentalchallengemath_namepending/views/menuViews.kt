@@ -38,6 +38,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.sp // Added for text size adjustment
 
@@ -48,7 +50,7 @@ public fun menu(
     onEditDeckClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
-    // onBackToLogin: () -> Unit // This would typically be handled by a NavController or a global state in the parent
+    onLogout: () -> Unit // <--- Renamed from onBackToLogin to onLogout
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -105,13 +107,77 @@ public fun menu(
                 Text("About", fontSize = 20.sp)
             }
 
-            // Note: The "when back button (android native) is pressed, returns to login screen"
-            // is typically handled by Android's navigation component (NavController) or by managing
-            // the back stack in your main activity/navigation host.
-            // This specific Composable itself doesn't directly control the system back button behavior,
-            // but the `onPlayGameClick`, `onEditDeckClick`, etc., lambdas are where you'd trigger
-            // navigation actions to different screens.
+            Spacer(modifier = Modifier.height(32.dp)) // Add some space before the logout button
+
+            // Logout Button <--- NEW!
+            Button(
+                onClick = onLogout, // <--- This will trigger the navigation back to Login
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(vertical = 8.dp),
+
+            ) {
+                Text("Logout", fontSize = 20.sp)
+            }
         }
     }
 }
 
+@Composable
+fun AboutScreen(
+    onNavigateToMenu: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            text = "About the Game",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "(Game Name) is a card game made by Vince Lawrence Baraclan and " +
+                    "Zoey Liana Gonzales for their Mobile Development Final Project.\n\n" +
+                    "The game includes a tutorial, multiplayer mode, and a single-player mode with 5 levels.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // --- Developers Section ---
+        Text(
+            text = "Developers",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DeveloperFace(
+                icon = Icons.Default.Person,
+                name = "Vince Lawrence\nBaraclan"
+            )
+
+            DeveloperFace(
+                icon = Icons.Default.Person,
+                name = "Zoey Liana\nGonzales"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(onClick = onNavigateToMenu) {
+            Text("Back to Menu")
+        }
+    }
+}

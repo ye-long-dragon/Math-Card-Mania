@@ -80,7 +80,7 @@ dependencies {
     // 3. Activity-Compose and Navigation-Compose.
     //    These are typically covered by the Compose BOM, so no explicit version needed.
     implementation("androidx.activity:activity-compose")
-    implementation("androidx.navigation:navigation-compose") // Let BOM manage version
+    implementation("androidx.navigation:navigation-compose:2.7.7")// Let BOM manage version
 
     // 4. Lifecycle ViewModel Compose (can specify version if needed, or let BOM handle if covered)
     //    2.7.0 is a reasonable choice, or remove version if BOM covers it.

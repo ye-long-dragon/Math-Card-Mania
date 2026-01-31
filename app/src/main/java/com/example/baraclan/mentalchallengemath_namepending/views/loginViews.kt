@@ -39,14 +39,15 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.material3.ripple.rememberRipple
 // Removed duplicate imports for clickable, indication, Text, remember, dp
 
 
 @Composable
 public fun LoginScreen(
-    onNavigateToSignUp: () -> Unit, // Callback for navigating to sign up
-    onLoginSuccess: () -> Unit      // Callback for successful login
+     // Callback for navigating to sign up
+    onLoginSuccess: () -> Unit,      // Callback for successful login
+    onNavigateToSignUp: () -> Unit,
+    onForgotPassword:( ) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -108,10 +109,10 @@ public fun LoginScreen(
                     .clickable(
                         // FIX: Added interactionSource and indication
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = rememberRipple()
+                        indication = null
                     ) {
                         println("Forgot password clicked!")
-                        // Add onForgotPassword callback here if needed
+                        onForgotPassword()
                     }
             )
 
@@ -139,7 +140,7 @@ public fun LoginScreen(
                         .clickable(
                             // FIX: Added interactionSource and indication
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = rememberRipple()
+                            indication = null
                         ) {
                             onNavigateToSignUp() // Trigger navigation to Sign Up
                         }
@@ -240,7 +241,76 @@ public fun SignInScreen(
                     modifier = Modifier
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = rememberRipple()
+                            indication = null
+                        ) {
+                            onNavigateToLogin() // Trigger navigation back to Login
+                        }
+                        .padding(start = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+public fun ForgotPasswordScreen(
+    onNavigateToLogin: () -> Unit,
+){
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Forgot Password?",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            // Email input
+            var email by remember { mutableStateOf("") }
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Enter your Email") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                singleLine = true
+            )
+
+            // Reset Password button
+            Button(
+                onClick = {
+                    // Handle password reset logic here
+                    println("Password reset requested for email: $email")
+                    // In a real app, you'd send an API request here
+                    // For now, let's assume it's done and navigate back to login
+                    onNavigateToLogin() // Navigate back after submission
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                enabled = email.isNotBlank() // Enable button only if email is not blank
+            ) {
+                Text("Reset Password")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Option to go back to Login screen
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Remembered your password?")
+                Text(
+                    text = " Log In",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            // indication = rememberRipple() // Uncomment for ripple effect
+                            indication = null // Or keep it null for no ripple
                         ) {
                             onNavigateToLogin() // Trigger navigation back to Login
                         }
