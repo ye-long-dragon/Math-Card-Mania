@@ -20,6 +20,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp // Added for text size adjustment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.example.baraclan.mentalchallengemath_namepending.R
+val Pixel= FontFamily(Font(R.font.bit))
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -32,7 +38,7 @@ public fun menu(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -49,7 +55,10 @@ public fun menu(
                     .height(60.dp)
                     .padding(vertical = 8.dp)
             ) {
-                Text("Play Game", fontSize = 20.sp)
+                Text("Play Game",
+                        fontSize = 20.sp,
+                        fontFamily = Pixel
+                    )
             }
 
             // Edit Deck Button
@@ -60,7 +69,8 @@ public fun menu(
                     .height(60.dp)
                     .padding(vertical = 8.dp)
             ) {
-                Text("Edit Deck", fontSize = 20.sp)
+                Text("Edit Deck", fontSize = 20.sp,
+                    fontFamily = Pixel)
             }
 
             // Profile Button
@@ -71,7 +81,8 @@ public fun menu(
                     .height(60.dp)
                     .padding(vertical = 8.dp)
             ) {
-                Text("Profile", fontSize = 20.sp)
+                Text("Profile", fontSize = 20.sp,
+                    fontFamily = Pixel)
             }
 
             // About Button
@@ -82,7 +93,8 @@ public fun menu(
                     .height(60.dp)
                     .padding(vertical = 8.dp)
             ) {
-                Text("About", fontSize = 20.sp)
+                Text("About", fontSize = 20.sp,
+                    fontFamily = Pixel)
             }
 
             Spacer(modifier = Modifier.height(32.dp)) // Add some space before the logout button
@@ -96,7 +108,8 @@ public fun menu(
                     .padding(vertical = 8.dp),
 
                 ) {
-                Text("Logout", fontSize = 20.sp)
+                Text("Logout", fontSize = 20.sp,
+                    fontFamily = Pixel)
             }
         }
     }
@@ -115,7 +128,8 @@ fun AboutScreen(
 
         Text(
             text = "About the Game",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = Pixel
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -124,7 +138,8 @@ fun AboutScreen(
             text = "(Game Name) is a card game made by Vince Lawrence Baraclan and " +
                     "Zoey Liana Gonzales for their Mobile Development Final Project.\n\n" +
                     "The game includes a tutorial, multiplayer mode, and a single-player mode with 5 levels.",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = Pixel
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -132,7 +147,8 @@ fun AboutScreen(
         // --- Developers Section ---
         Text(
             text = "Developers",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            fontFamily = Pixel
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -155,7 +171,8 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(onClick = onNavigateToMenu) {
-            Text("Back to Menu")
+            Text("Back to Menu",
+                fontFamily = Pixel)
         }
     }
 }

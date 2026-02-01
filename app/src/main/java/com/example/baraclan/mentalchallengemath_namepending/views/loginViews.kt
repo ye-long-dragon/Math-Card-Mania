@@ -24,7 +24,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.fontResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.example.baraclan.mentalchallengemath_namepending.R
+
 
 
 @Composable
@@ -36,7 +42,7 @@ public fun LoginScreen(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -48,7 +54,8 @@ public fun LoginScreen(
             Text(
                 text = "Welcome Back!",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 32.dp),
+                fontFamily = Pixel
             )
 
             // Username
@@ -56,9 +63,10 @@ public fun LoginScreen(
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text("Username", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                singleLine = true
+                singleLine = true,
+
             )
 
             // Password
@@ -66,7 +74,7 @@ public fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Password", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
@@ -82,7 +90,8 @@ public fun LoginScreen(
                     checked = savePassword,
                     onCheckedChange = { savePassword = it }
                 )
-                Text(text = "Remember me")
+                Text(text = "Remember me",
+                    fontFamily = Pixel)
             }
 
             // Forgot password button
@@ -96,7 +105,8 @@ public fun LoginScreen(
                         indication = null // or null if no ripple
                     ) {
                         onForgotPassword() // <--- Trigger the callback here
-                    }
+                    },
+                fontFamily = Pixel
             )
 
             // Login button
@@ -108,28 +118,35 @@ public fun LoginScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Login")
+                Text("Login",
+                    fontFamily = Pixel)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Option to go to Sign Up screen
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Don't have an account?")
-                Text(
-                    text = " Sign Up",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clickable(
-                            // FIX: Added interactionSource and indication
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            onNavigateToSignUp() // Trigger navigation to Sign Up
-                        }
-                        .padding(start = 4.dp)
-                )
+                Text("Don't have an account?",
+                    fontFamily = Pixel)
+
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = " Sign Up",
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(
+                        // FIX: Added interactionSource and indication
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onNavigateToSignUp() // Trigger navigation to Sign Up
+                    }
+                    .padding(start = 4.dp),
+                fontFamily = Pixel
+            )
         }
     }
 }
@@ -143,7 +160,7 @@ public fun SignInScreen(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -163,7 +180,7 @@ public fun SignInScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text("Email", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true
             )
@@ -173,7 +190,7 @@ public fun SignInScreen(
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text("Username", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true
             )
@@ -183,7 +200,7 @@ public fun SignInScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Password", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
@@ -194,7 +211,7 @@ public fun SignInScreen(
             OutlinedTextField(
                 value = reEnteredPassword,
                 onValueChange = { reEnteredPassword = it },
-                label = { Text("Re-enter Password") },
+                label = { Text("Re-enter Password", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
@@ -210,27 +227,32 @@ public fun SignInScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Create Account")
+                Text("Create Account",fontFamily = Pixel)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Option to go back to Login screen
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Already have an account?")
-                Text(
-                    text = " Log In",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            onNavigateToLogin() // Trigger navigation back to Login
-                        }
-                        .padding(start = 4.dp)
-                )
+                Text("Already have an account?",fontFamily = Pixel)
             }
+            Spacer(modifier = Modifier.height(16.dp))
+
+             Row(verticalAlignment = Alignment.CenterVertically){
+                  Text(
+                      text = " Log In",
+                      color = MaterialTheme.colorScheme.primary,
+                      modifier = Modifier
+                          .clickable(
+                              interactionSource = remember { MutableInteractionSource() },
+                              indication = null
+                          ) {
+                              onNavigateToLogin() // Trigger navigation back to Login
+                          }
+                          .padding(start = 4.dp)   ,
+                      fontFamily = Pixel
+                                 )
+             }
         }
     }
 }
@@ -241,7 +263,7 @@ public fun ForgotPasswordScreen(
 ){
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -253,7 +275,8 @@ public fun ForgotPasswordScreen(
             Text(
                 text = "Forgot Password?",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 32.dp),
+                fontFamily = Pixel
             )
 
             // Email input
@@ -261,7 +284,7 @@ public fun ForgotPasswordScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Enter your Email") },
+                label = { Text("Enter your Email", fontFamily = Pixel) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 singleLine = true
             )
@@ -278,14 +301,19 @@ public fun ForgotPasswordScreen(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = email.isNotBlank() // Enable button only if email is not blank
             ) {
-                Text("Reset Password")
+                Text("Reset Password", fontFamily = Pixel)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Option to go back to Login screen
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Remembered your password?")
+                Text("Remembered your password?", fontFamily = Pixel)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically){
                 Text(
                     text = " Log In",
                     color = MaterialTheme.colorScheme.primary,
@@ -297,8 +325,10 @@ public fun ForgotPasswordScreen(
                         ) {
                             onNavigateToLogin() // Trigger navigation back to Login
                         }
-                        .padding(start = 4.dp)
+                        .padding(start = 4.dp),
+                    fontFamily = Pixel
                 )
+                
             }
         }
     }

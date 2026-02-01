@@ -26,11 +26,18 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.baraclan.mentalchallengemath_namepending.models.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.items
+
 
 @Composable
 fun DeveloperFace(
@@ -67,8 +74,9 @@ fun DeveloperFace(
 @Composable
 public fun CardGameDisplay( // This is the new/modified card view for cardGame objects
     card: cardGame,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null // Optional click handler for interactivity
+    onClick: ()-> Unit,
+    modifier: Modifier = Modifier
+     // Optional click handler for interactivity
 ) {
     // Derive the string content from the cardGame object
     val cardContentText = remember(card) {
@@ -122,9 +130,9 @@ public fun CardGameDisplay( // This is the new/modified card view for cardGame o
 
 @Composable
 public fun DeckHorizontalScroll(
-    deckCards: List<cardGame>, // The list of cardGame objects in the deck
-    modifier: Modifier = Modifier,
-    onCardClick: ((cardGame) -> Unit)? = null // Optional callback for when a card in the deck is clicked
+    deckCards: List<cardGame>,
+    onCardClick: ((cardGame) -> Unit)? = null ,// The list of cardGame objects in the deck
+    modifier: Modifier = Modifier// Optional callback for when a card in the deck is clicked
 ) {
     val scrollState = rememberScrollState()
 
@@ -154,6 +162,40 @@ public fun DeckHorizontalScroll(
         }
     }
 }
+
+
+@Composable
+public fun collectionView(
+    playerCollection: cardContainer,
+    onCardClick: ((cardGame) -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+
+        val cards = playerCollection.getAllCardsAsList() // This should return List<cardGame>
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Here's how you iterate through the 'cards' list
+            items(
+                cards, // Pass the list directly as the first argument
+                key = { card -> card.id } // Use 'card.id' for stable IDs, as 'cardGame' has an 'id'
+            ) { cardGameItem -> // 'cardGameItem' here is a single cardGame object from the list
+                CardGameDisplay(
+                    card = cardGameItem, // Pass the individual cardGame object to CardGameDisplay
+                    onClick = {
+                        onCardClick?.invoke(cardGameItem) // Invoke the callback with the clicked card
+                    }
+                )
+            }
+        }
+    }
+
 
 
 
