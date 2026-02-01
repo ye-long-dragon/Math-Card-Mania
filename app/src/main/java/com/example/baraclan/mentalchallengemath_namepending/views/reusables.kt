@@ -26,6 +26,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -72,47 +73,44 @@ fun DeveloperFace(
 }
 
 @Composable
-public fun CardGameDisplay( // This is the new/modified card view for cardGame objects
+public fun CardGameDisplay(
     card: cardGame,
-    onClick: ()-> Unit,
+    onClick: ()-> Unit, // Non-nullable click handler
     modifier: Modifier = Modifier
-     // Optional click handler for interactivity
 ) {
-    // Derive the string content from the cardGame object
     val cardContentText = remember(card) {
         when (card.type) {
             cardType.NUMBER -> card.numberValue.toString()
             cardType.OPERATOR -> when (card.operator) {
                 Operator.ADD -> "+"
                 Operator.SUBTRACT -> "-"
-                Operator.MULTIPLY -> "*"
-                Operator.DIVIDE -> "/"
+                Operator.MULTIPLY -> "x" // Using 'x' for multiply for visual clarity
+                Operator.DIVIDE -> "÷" // Using '÷' for divide
                 null -> "?" // Should not happen with validation
             }
         }
     }
 
+    val cardBackgroundColor = when (card.type) {
+        cardType.NUMBER -> MaterialTheme.colorScheme.primaryContainer
+        cardType.OPERATOR -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val cardContentColor = MaterialTheme.colorScheme.onBackground // Explicitly set content color
+
     Card(
         modifier = modifier
-            .size(64.dp) // Consistent size with your original cardView
+            .size(64.dp) // Consistent size
             .padding(4.dp)
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null, // Using ripple as in your original `cardView` example
-                        onClick = onClick
-                    )
-                } else Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // Enabled ripple effect as per your comment
+                onClick = onClick
             ),
         shape = CardDefaults.shape, // Use default card shape
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (card.type) {
-                cardType.NUMBER -> MaterialTheme.colorScheme.primaryContainer
-                cardType.OPERATOR -> MaterialTheme.colorScheme.secondaryContainer
-            },
-            contentColor = MaterialTheme.colorScheme.onBackground // Use onBackground for text for better contrast
+            containerColor = cardBackgroundColor,
+            contentColor = cardContentColor // Set contentColor for components inside the Card
         )
     ) {
         Box(
@@ -122,7 +120,7 @@ public fun CardGameDisplay( // This is the new/modified card view for cardGame o
             Text(
                 text = cardContentText,
                 style = MaterialTheme.typography.headlineSmall,
-                color = LocalContentColor.current // Use local content color or explicitly set
+                color = cardContentColor // Explicitly use the derived content color
             )
         }
     }
@@ -195,6 +193,64 @@ public fun collectionView(
             }
         }
     }
+
+@Composable
+public fun HandDisplay(
+    playerHand: hand,
+    onCardClick: ((cardGame) -> Unit)? = null,
+    modifier: Modifier = Modifier
+){
+    val cardsInHand = playerHand.getAllCardsAsList() // Get all cards as a flat list
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 100.dp, max = 150.dp) // Set a height range for the hand
+            .padding(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        shadowElevation = 2.dp
+    ) {
+        val scrollState = rememberScrollState() // For horizontal scrolling
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (cardsInHand.isEmpty()) {
+                Text(
+                    text = "Your hand is empty.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            } else {
+                cardsInHand.forEach { card ->
+                    // Using the new CardGameDisplay
+                    CardGameDisplay(card = card, onClick = { onCardClick?.invoke(card) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+public fun InputCardsDisplay(
+    playerHand:hand, // This is likely the player's current hand from which they select cards
+    onCardClick: ((cardGame) -> Unit)? = null,
+    modifier: Modifier = Modifier
+){
+    // Assuming InputCardsDisplay serves as the primary interactive display for the hand
+    // where the user selects cards to form an equation.
+    HandDisplay(
+        playerHand = playerHand,
+        onCardClick = onCardClick,
+        modifier = modifier
+    )
+}
 
 
 

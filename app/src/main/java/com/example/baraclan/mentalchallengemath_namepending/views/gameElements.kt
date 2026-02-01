@@ -18,64 +18,51 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.heightIn
+import com.example.baraclan.mentalchallengemath_namepending.*
+import com.example.baraclan.mentalchallengemath_namepending.models.*
 
 
 
 @Composable
-public fun statusBar(
-    level: Int,
-    coins: Int,
-    modifier: Modifier = Modifier
-) {
+fun statusBar(score: Int, turn: Int, modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween // Distributes content
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Correct way to pass the text parameter directly
-        Text(text = "Level: $level")
-        Text(text = "Coins: $coins")
+        Text("Score: $score", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+        Text("Turn: $turn", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
 @Composable
-public fun goal(
-    goalNumber: Int, // The target number the player needs to reach
-    modifier: Modifier = Modifier
-) {
-    Card(
+fun goal(gameGoals: List<Double>, modifier: Modifier = Modifier) {
+    Column(
         modifier = modifier
-            .fillMaxWidth() // Take full width
-            .padding(8.dp), // Padding around the goal card
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp), // Padding inside the card
-            horizontalAlignment = Alignment.CenterHorizontally // Center the content
-        ) {
-            Text(
-                text = "Goal:",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = goalNumber.toString(), // Display the goal number
-                style = MaterialTheme.typography.displayLarge, // Make the goal number very prominent
-                color = MaterialTheme.colorScheme.primary
-            )
+        Text("Current Goal:", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+        // For simplicity, just display the first goal for now
+        if (gameGoals.isNotEmpty()) {
+            Text(gameGoals.first().toString(), style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
+        } else {
+            Text("No Goal Set", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
 
 @Composable
 public fun EquationDisplay(
-    equationElements: List<String>, // The list of cards forming the equation
+    equationElements: List<cardGame>, // Changed to List<cardGame>
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState() // For horizontal scrolling if the equation is long
+    val scrollState = rememberScrollState()
 
-    Surface( // Using Surface to give it a distinct background and elevation
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 80.dp) // Ensure a minimum height even if empty or short
@@ -101,8 +88,8 @@ public fun EquationDisplay(
                 )
             } else {
                 equationElements.forEach { element ->
-                    // Display each element using MathElementCard (your 'card' composable)
-                    //cardView(content = element)
+                    // Using the new CardGameDisplay
+                    CardGameDisplay(card = element, onClick = {}) // Cards in equation are not interactive here for now
                 }
             }
         }

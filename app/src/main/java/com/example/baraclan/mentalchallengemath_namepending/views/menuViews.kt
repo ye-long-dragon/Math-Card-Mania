@@ -28,89 +28,41 @@ import com.example.baraclan.mentalchallengemath_namepending.R
 val Pixel= FontFamily(Font(R.font.bit))
 
 @OptIn(ExperimentalLayoutApi::class)
+
 @Composable
-public fun menu(
-    onPlayGameClick: () -> Unit = {},
-    onEditDeckClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
-    onAboutClick: () -> Unit = {},
-    onLogout: () -> Unit // <--- Renamed from onBackToLogin to onLogout
+fun menu(
+    onLogout: () -> Unit,
+    onAboutClick: () -> Unit,
+    onEditDeckClick: () -> Unit,
+    onStartGameClick: () -> Unit // ADDED: New parameter
 ) {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Play Game Button
-            Button(
-                onClick = onPlayGameClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Play Game",
-                        fontSize = 20.sp,
-                        fontFamily = Pixel
-                    )
-            }
+        Text("Main Menu", style = MaterialTheme.typography.headlineLarge)
+        Spacer(modifier = Modifier.height(32.dp))
 
-            // Edit Deck Button
-            Button(
-                onClick = onEditDeckClick, // <--- Trigger the callback here
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Edit Deck", fontSize = 20.sp,
-                    fontFamily = Pixel)
-            }
+        Button(onClick = onStartGameClick) { // ADDED: Button to start the game
+            Text("Start Game")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
 
-            // Profile Button
-            Button(
-                onClick = onProfileClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Profile", fontSize = 20.sp,
-                    fontFamily = Pixel)
-            }
+        Button(onClick = onEditDeckClick) {
+            Text("Edit Deck")
+        }
+        Spacer(modifier =  Modifier.height(16.dp))
 
-            // About Button
-            Button(
-                onClick = onAboutClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("About", fontSize = 20.sp,
-                    fontFamily = Pixel)
-            }
+        Button(onClick = onAboutClick) {
+            Text("About")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(32.dp)) // Add some space before the logout button
-
-            // Logout Button <--- NEW!
-            Button(
-                onClick = onLogout, // <--- This will trigger the navigation back to Login
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(vertical = 8.dp),
-
-                ) {
-                Text("Logout", fontSize = 20.sp,
-                    fontFamily = Pixel)
-            }
+        Button(onClick = onLogout) {
+            Text("Logout")
         }
     }
 }

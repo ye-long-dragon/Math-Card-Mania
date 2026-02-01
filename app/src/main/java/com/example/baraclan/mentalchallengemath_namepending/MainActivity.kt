@@ -25,7 +25,7 @@ import com.example.baraclan.mentalchallengemath_namepending.views.*
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import java.util.UUID // Import for generating unique IDs
 
-// Define your routes (unchanged)
+// Define your routes
 object NavRoutes {
     const val Login = "login"
     const val Menu = "menu"
@@ -33,6 +33,7 @@ object NavRoutes {
     const val ForgotPassword = "forgot_password"
     const val AboutScreen = "about_screen"
     const val EditDeck = "edit_Deck"
+    const val Game = "game" // ADDED: New route for the GameView
 }
 
 class MainActivity : ComponentActivity() {
@@ -189,6 +190,9 @@ public fun AppNavigation(
                 },
                 onEditDeckClick = {
                     navController.navigate(NavRoutes.EditDeck)
+                },
+                onStartGameClick = { // ADDED: New callback for starting the game
+                    navController.navigate(NavRoutes.Game)
                 }
             )
         }
@@ -239,8 +243,9 @@ public fun AppNavigation(
                 }
             )
         }
-
-        //Decks and Collections
-
+        // ADDED: Composable for the GameView
+        composable(NavRoutes.Game) {
+            GameView() // Your GameView Composable is displayed here
+        }
     }
 }
