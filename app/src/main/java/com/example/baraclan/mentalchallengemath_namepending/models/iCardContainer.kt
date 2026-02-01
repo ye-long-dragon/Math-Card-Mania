@@ -12,4 +12,7 @@ interface iCardContainer {
     fun getAllCardsWithCounts(): Map<cardGame, Int>
     fun contains(card: cardGame): Boolean
     fun isEmpty(): Boolean
+
+    // NEW: Function to get all cards as a flat list
+    fun getAllCardsAsList(): List<cardGame>
 }

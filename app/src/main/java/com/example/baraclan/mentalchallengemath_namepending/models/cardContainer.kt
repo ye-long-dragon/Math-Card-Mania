@@ -1,11 +1,11 @@
 package com.example.baraclan.mentalchallengemath_namepending.models
 
-import java.lang.IllegalArgumentException // For error handling
+import java.lang.IllegalArgumentException
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 
 // Requires ICardContainer and cardGame
 abstract class cardContainer(override val name: String) : iCardContainer {
-    private val cards: MutableMap<cardGame, Int> = mutableMapOf()
+    public val cards: MutableMap<cardGame, Int> = mutableMapOf()
 
     override fun addCard(card: cardGame, count: Int) {
         require(count > 0) { "Count must be positive to add cards." }
@@ -50,5 +50,16 @@ abstract class cardContainer(override val name: String) : iCardContainer {
 
     override fun toString(): String {
         return "$name (${getTotalCount()} cards total, ${getUniqueCardTypesCount()} unique types)"
+    }
+
+    // NEW: Implementation for getAllCardsAsList()
+    override fun getAllCardsAsList(): List<cardGame> {
+        val flatList = mutableListOf<cardGame>()
+        cards.forEach { (card, count) ->
+            repeat(count) {
+                flatList.add(card)
+            }
+        }
+        return flatList.toList() // Return an immutable list
     }
 }
