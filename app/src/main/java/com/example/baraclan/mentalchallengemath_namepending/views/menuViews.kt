@@ -43,26 +43,26 @@ fun menu(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Main Menu", style = MaterialTheme.typography.headlineLarge)
+        Text("Main Menu", style = MaterialTheme.typography.headlineLarge,fontFamily = Pixel)
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(onClick = onStartGameClick) { // ADDED: Button to start the game
-            Text("Start Game")
+            Text("Start Game",fontFamily = Pixel)
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onEditDeckClick) {
-            Text("Edit Deck")
+            Text("Edit Deck",fontFamily = Pixel)
         }
         Spacer(modifier =  Modifier.height(16.dp))
 
         Button(onClick = onAboutClick) {
-            Text("About")
+            Text("About",fontFamily = Pixel)
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onLogout) {
-            Text("Logout")
+            Text("Logout",fontFamily = Pixel)
         }
     }
 }

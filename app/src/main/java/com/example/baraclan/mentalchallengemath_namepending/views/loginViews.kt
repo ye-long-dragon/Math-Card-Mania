@@ -35,14 +35,13 @@ import com.example.baraclan.mentalchallengemath_namepending.R
 
 @Composable
 public fun LoginScreen(
-    // Callback for navigating to sign up
     onLoginSuccess: () -> Unit,      // Callback for successful login
-    onNavigateToSignUp: () -> Unit,
-    onForgotPassword:( ) -> Unit
+    onNavigateToSignUp: () -> Unit,  // Callback for navigating to sign up
+    onForgotPassword:( ) -> Unit     // Callback for navigating to forgot password
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent
+        color = Color.Transparent // Ensure transparency to show background image
     ) {
         Column(
             modifier = Modifier
@@ -52,46 +51,56 @@ public fun LoginScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Welcome Back!",
+                text = "Math Card Mania",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 32.dp),
                 fontFamily = Pixel
             )
 
             // Username
-            var username by remember { mutableStateOf("admin") }
+            var username by remember { mutableStateOf("admin") } // Default value for testing
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Username", fontFamily = Pixel) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 singleLine = true,
-
             )
 
             // Password
-            var password by remember { mutableStateOf("admin") }
+            var password by remember { mutableStateOf("admin") } // Default value for testing
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password", fontFamily = Pixel) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
             )
 
+            //Error Message
+            var errorMessage by remember { mutableStateOf<String?>(null) }
+
             // Save password box
             var savePassword by remember { mutableStateOf(false) }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
                     checked = savePassword,
                     onCheckedChange = { savePassword = it }
                 )
-                Text(text = "Remember me",
-                    fontFamily = Pixel)
+                Text(
+                    text = "Remember me",
+                    fontFamily = Pixel
+                )
             }
 
             // Forgot password button
@@ -102,9 +111,9 @@ public fun LoginScreen(
                     .padding(bottom = 16.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null // or null if no ripple
+                        indication = null // Or use rememberRipple() if a ripple effect is desired
                     ) {
-                        onForgotPassword() // <--- Trigger the callback here
+                        onForgotPassword() // Trigger the callback here
                     },
                 fontFamily = Pixel
             )
@@ -112,39 +121,52 @@ public fun LoginScreen(
             // Login button
             Button(
                 onClick = {
-                    // Handle login logic
+                    // Clear any previous error message
+                    errorMessage = "Please Input Admin in username and password"
+
                     println("Login attempted with Username: $username, Password: $password")
-                    onLoginSuccess() // Trigger the success callback
+
+                    // --- Corrected Login Validation Logic ---
+                    if (username == "admin" && password == "admin") { // Correct comparison
+                        onLoginSuccess() // Trigger the success callback
+                    } else { // 'else' block must contain code
+                        errorMessage = "Invalid username or password." // Set error message
+                        println("Login failed for user: $username")
+                    }
+                    // --- End Corrected Login Validation Logic ---
                 },
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
             ) {
-                Text("Login",
-                    fontFamily = Pixel)
+                Text(
+                    text = "Login",
+                    fontFamily = Pixel // Assuming Pixel is a custom FontFamily
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Option to go to Sign Up screen
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Don't have an account?",
-                    fontFamily = Pixel)
-
+                Text(
+                    text = "Don't have an account?",
+                    fontFamily = Pixel
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp)) // Add space between the text and clickable "Sign Up"
 
             Text(
-                text = " Sign Up",
+                text = "Sign Up", // Text for the Sign Up link
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .clickable(
-                        // FIX: Added interactionSource and indication
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null
+                        indication = null // Or use rememberRipple() if a ripple effect is desired
                     ) {
                         onNavigateToSignUp() // Trigger navigation to Sign Up
-                    }
-                    .padding(start = 4.dp),
+                    },
                 fontFamily = Pixel
             )
         }

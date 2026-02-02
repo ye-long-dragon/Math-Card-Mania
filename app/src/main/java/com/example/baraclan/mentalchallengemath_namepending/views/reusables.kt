@@ -1,6 +1,7 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -38,6 +39,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.baraclan.mentalchallengemath_namepending.R
 
 
 @Composable
@@ -78,49 +82,63 @@ public fun CardGameDisplay(
     onClick: ()-> Unit, // Non-nullable click handler
     modifier: Modifier = Modifier
 ) {
-    val cardContentText = remember(card) {
+    val imageResId: Int? = remember(card) {
         when (card.type) {
-            cardType.NUMBER -> card.numberValue.toString()
+            cardType.NUMBER -> when (card.numberValue) {
+                0 -> R.drawable.zero
+                1 -> R.drawable.one
+                2 -> R.drawable.two
+                3 -> R.drawable.three
+                4 -> R.drawable.four
+                5 -> R.drawable.five
+                6 -> R.drawable.six
+                7 -> R.drawable.seven
+                8 -> R.drawable.eight
+                9 -> R.drawable.nine
+                else -> null
+            }
             cardType.OPERATOR -> when (card.operator) {
-                Operator.ADD -> "+"
-                Operator.SUBTRACT -> "-"
-                Operator.MULTIPLY -> "x" // Using 'x' for multiply for visual clarity
-                Operator.DIVIDE -> "÷" // Using '÷' for divide
-                null -> "?" // Should not happen with validation
+                Operator.ADD -> R.drawable.addition
+                Operator.SUBTRACT -> R.drawable.subtraction
+                Operator.MULTIPLY -> R.drawable.multiplication
+                Operator.DIVIDE -> R.drawable.division
+                null -> null
             }
         }
     }
 
-    val cardBackgroundColor = when (card.type) {
-        cardType.NUMBER -> MaterialTheme.colorScheme.primaryContainer
-        cardType.OPERATOR -> MaterialTheme.colorScheme.secondaryContainer
-    }
-    val cardContentColor = MaterialTheme.colorScheme.onBackground // Explicitly set content color
-
-    Card(
-        modifier = modifier
-            .size(64.dp) // Consistent size
-            .padding(4.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null, // Enabled ripple effect as per your comment
-                onClick = onClick
-            ),
-        shape = CardDefaults.shape, // Use default card shape
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = cardBackgroundColor,
-            contentColor = cardContentColor // Set contentColor for components inside the Card
+    if (imageResId != null) {
+        Image(
+            painter = painterResource(id = imageResId),
+            contentDescription = card.name,
+            modifier = modifier // Use the incoming modifier first
+                .size(64.dp) // Maintain the consistent card size
+                // .padding(4.dp) // REMOVED: This was creating internal space
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null, // No ripple effect as specified
+                    onClick = onClick
+                ),
+            contentScale = ContentScale.Fit // Still use Fit to prevent image distortion
         )
-    ) {
+    } else {
+        // Fallback if no image resource is found, rendering a placeholder box
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier
+                .size(64.dp) // Maintain consistent size for fallback
+                // .padding(4.dp) // REMOVED: This was creating internal space
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                )
+                .background(MaterialTheme.colorScheme.errorContainer),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = cardContentText,
+                text = "ERR",
                 style = MaterialTheme.typography.headlineSmall,
-                color = cardContentColor // Explicitly use the derived content color
+                color = MaterialTheme.colorScheme.onErrorContainer
             )
         }
     }
@@ -168,31 +186,29 @@ public fun collectionView(
     onCardClick: ((cardGame) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val cards = playerCollection.getAllCardsAsList()
 
-        val cards = playerCollection.getAllCardsAsList() // This should return List<cardGame>
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // Here's how you iterate through the 'cards' list
-            items(
-                cards, // Pass the list directly as the first argument
-                key = { card -> card.id } // Use 'card.id' for stable IDs, as 'cardGame' has an 'id'
-            ) { cardGameItem -> // 'cardGameItem' here is a single cardGame object from the list
-                CardGameDisplay(
-                    card = cardGameItem, // Pass the individual cardGame object to CardGameDisplay
-                    onClick = {
-                        onCardClick?.invoke(cardGameItem) // Invoke the callback with the clicked card
-                    }
-                )
-            }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(4),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp), // Padding around the entire grid
+        verticalArrangement = Arrangement.spacedBy(4.dp),   // REVERTED: Vertical space between items
+        horizontalArrangement = Arrangement.spacedBy(0.dp)  // KEPT: No horizontal space between items
+    ) {
+        items(
+            cards,
+            key = { card -> card.id }
+        ) { cardGameItem ->
+            CardGameDisplay(
+                card = cardGameItem,
+                onClick = {
+                    onCardClick?.invoke(cardGameItem)
+                }
+            )
         }
     }
+}
 
 @Composable
 public fun HandDisplay(
@@ -200,18 +216,18 @@ public fun HandDisplay(
     onCardClick: ((cardGame) -> Unit)? = null,
     modifier: Modifier = Modifier
 ){
-    val cardsInHand = playerHand.getAllCardsAsList() // Get all cards as a flat list
+    val cardsInHand = playerHand.getAllCardsAsList()
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 100.dp, max = 150.dp) // Set a height range for the hand
+            .heightIn(min = 100.dp, max = 150.dp)
             .padding(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium,
         shadowElevation = 2.dp
     ) {
-        val scrollState = rememberScrollState() // For horizontal scrolling
+        val scrollState = rememberScrollState()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,7 +245,6 @@ public fun HandDisplay(
                 )
             } else {
                 cardsInHand.forEach { card ->
-                    // Using the new CardGameDisplay
                     CardGameDisplay(card = card, onClick = { onCardClick?.invoke(card) })
                 }
             }
@@ -239,17 +254,90 @@ public fun HandDisplay(
 
 @Composable
 public fun InputCardsDisplay(
-    playerHand:hand, // This is likely the player's current hand from which they select cards
+    playerHand:hand,
     onCardClick: ((cardGame) -> Unit)? = null,
     modifier: Modifier = Modifier
 ){
-    // Assuming InputCardsDisplay serves as the primary interactive display for the hand
-    // where the user selects cards to form an equation.
     HandDisplay(
         playerHand = playerHand,
         onCardClick = onCardClick,
         modifier = modifier
     )
+}
+
+@Composable
+fun statusBar(score: Int, turn: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Score: $score", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+        Text("Turn: $turn", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+    }
+}
+
+@Composable
+fun goal(gameGoals: List<Double>, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Current Goal:", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+        if (gameGoals.isNotEmpty()) {
+            Text(gameGoals.first().toString(), style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
+        } else {
+            Text("No Goal Set", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
+        }
+    }
+}
+
+@Composable
+public fun EquationDisplay(
+    equationElements: List<cardGame>,
+    onCardClick: ((cardGame) -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 80.dp)
+            .padding(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (equationElements.isEmpty()) {
+                Text(
+                    text = "Your equation will appear here.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            } else {
+                equationElements.forEach { element ->
+                    CardGameDisplay(
+                        card = element,
+                        onClick = { onCardClick?.invoke(element) }
+                    )
+                }
+            }
+        }
+    }
 }
 
 

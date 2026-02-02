@@ -33,7 +33,7 @@ object NavRoutes {
     const val ForgotPassword = "forgot_password"
     const val AboutScreen = "about_screen"
     const val EditDeck = "edit_Deck"
-    const val Game = "game" // ADDED: New route for the GameView
+    const val GameSingle = "game_single" // ADDED: New route for the GameView
 }
 
 class MainActivity : ComponentActivity() {
@@ -192,7 +192,7 @@ public fun AppNavigation(
                     navController.navigate(NavRoutes.EditDeck)
                 },
                 onStartGameClick = { // ADDED: New callback for starting the game
-                    navController.navigate(NavRoutes.Game)
+                    navController.navigate(NavRoutes.GameSingle)
                 }
             )
         }
@@ -244,8 +244,8 @@ public fun AppNavigation(
             )
         }
         // ADDED: Composable for the GameView
-        composable(NavRoutes.Game) {
-            GameView() // Your GameView Composable is displayed here
+        composable(NavRoutes.GameSingle) {
+            GameView(currentDeck) // Your GameView Composable is displayed here
         }
     }
 }
