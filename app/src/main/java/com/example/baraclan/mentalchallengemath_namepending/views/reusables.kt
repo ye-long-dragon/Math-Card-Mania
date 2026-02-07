@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.baraclan.mentalchallengemath_namepending.R
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.Black
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardGreen
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.White
 
 
@@ -75,7 +76,7 @@ fun DeveloperFace(
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+            color = BlackBoardYellow
         )
     }
 }

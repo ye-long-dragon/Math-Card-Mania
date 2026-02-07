@@ -11,6 +11,8 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 val BlackBoardGreen = Color(0xFF1E3A2E)
 
+val BlackBoardYellow = Color(0xFFFFEE8C)
+
 // Add any other specific colors you use in your app
 val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)

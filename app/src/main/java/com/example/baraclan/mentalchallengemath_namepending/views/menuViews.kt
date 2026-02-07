@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import com.example.baraclan.mentalchallengemath_namepending.R
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
+
 val Pixel= FontFamily(Font(R.font.bit))
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -44,7 +46,7 @@ fun menu(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Main Menu", style = MaterialTheme.typography.headlineLarge,fontFamily = Pixel)
+        Text("Main Menu", style = MaterialTheme.typography.headlineLarge,fontFamily = Pixel,color = BlackBoardYellow)
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(onClick = onStartGameClick) { // ADDED: Button to start the game
@@ -87,7 +89,8 @@ fun AboutScreen(
         Text(
             text = "About the Game",
             style = MaterialTheme.typography.headlineMedium,
-            fontFamily = Pixel
+            fontFamily = Pixel,
+            color = BlackBoardYellow
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -97,7 +100,8 @@ fun AboutScreen(
                     "Zoey Liana Gonzales for their Mobile Development Final Project.\n\n" +
                     "The game includes a tutorial, multiplayer mode, and a single-player mode with 5 levels.",
             style = MaterialTheme.typography.bodyMedium,
-            fontFamily = Pixel
+            fontFamily = Pixel,
+            color = BlackBoardYellow
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -106,7 +110,8 @@ fun AboutScreen(
         Text(
             text = "Developers",
             style = MaterialTheme.typography.titleMedium,
-            fontFamily = Pixel
+            fontFamily = Pixel,
+            color = BlackBoardYellow
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -130,7 +135,8 @@ fun AboutScreen(
 
         Button(onClick = onNavigateToMenu) {
             Text("Back to Menu",
-                fontFamily = Pixel)
+                fontFamily = Pixel,
+                color = BlackBoardYellow)
         }
     }
 }
@@ -151,22 +157,23 @@ fun MultiplayerSelectScreen(
         Text(
             "Multiplayer Modes",
             style = MaterialTheme.typography.headlineLarge,
-            fontFamily = Pixel
+            fontFamily = Pixel,
+            color = BlackBoardYellow
         )
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(onClick = onNavigateToLocal) { // ADDED: Button to start the game
-            Text("Local Multiplayer", fontFamily = Pixel)
+            Text("Local Multiplayer", fontFamily = Pixel,color = BlackBoardYellow)
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onNavigateToOnline) {
-            Text("Online Multiplayer", fontFamily = Pixel)
+            Text("Online Multiplayer", fontFamily = Pixel,color = BlackBoardYellow)
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onNavigateToMenu) {
-            Text("Return to Menu", fontFamily = Pixel)
+            Text("Return to Menu", fontFamily = Pixel,color = BlackBoardYellow)
         }
     }
 }

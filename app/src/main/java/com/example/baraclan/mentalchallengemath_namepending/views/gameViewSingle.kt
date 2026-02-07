@@ -26,6 +26,7 @@ import com.example.baraclan.mentalchallengemath_namepending.views.*
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import com.example.baraclan.mentalchallengemath_namepending.scripts.RandomHand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.evaluateEquation
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 
 val gameGoal: List<Double> = listOf(
     4.0, -0.125, -36.0, 0.00462962962963, 576.0,
@@ -113,7 +114,8 @@ public fun GameView(
             text = "Select cards from your hand:",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 8.dp),
-            fontFamily = Pixel
+            fontFamily = Pixel,
+            color = BlackBoardYellow
         )
         InputCardsDisplay(playerHand = playerHandState, onCardClick = onHandCardClick)
 
@@ -141,7 +143,7 @@ public fun GameView(
                     currentTurn++
                 }
             }) {
-                Text("Submit Equation", fontFamily = Pixel)
+                Text("Submit Equation", fontFamily = Pixel,color = BlackBoardYellow)
             }
             Button(onClick = {
                 // Return equation cards to hand
@@ -150,7 +152,7 @@ public fun GameView(
                 }
                 equationCards.clear()
             }) {
-                Text("Clear Equation", fontFamily = Pixel)
+                Text("Clear Equation", fontFamily = Pixel,color = BlackBoardYellow)
             }
         }
     }

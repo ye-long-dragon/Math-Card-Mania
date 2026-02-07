@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextAlign // Added TextAlign import
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp // Added sp for font sizes
 import com.example.baraclan.mentalchallengemath_namepending.models.*
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
+
 // Removed: import com.example.baraclan.mentalchallengemath_namepending.views.* (redundant as this file is in that package)
 
 // Assuming 'Pixel' FontFamily is defined somewhere and imported, e.g.:
@@ -47,7 +49,8 @@ public fun EditDeckScreen(
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
-                fontSize = 28.sp // A bit larger for a main title
+                fontSize = 28.sp, // A bit larger for a main title
+                color = BlackBoardYellow
             )
         )
 
@@ -60,7 +63,8 @@ public fun EditDeckScreen(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
-                fontSize = 20.sp // Smaller than main title
+                fontSize = 20.sp, // Smaller than main title
+                color = BlackBoardYellow
             )
         )
 
@@ -85,7 +89,8 @@ public fun EditDeckScreen(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
-                fontSize = 20.sp
+                fontSize = 20.sp,
+                color = BlackBoardYellow
             )
         )
 
@@ -107,7 +112,8 @@ public fun EditDeckScreen(
             style = MaterialTheme.typography.bodySmall.copy(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp // Smaller for instructions
+                fontSize = 14.sp // Smaller for instructions,
+                ,color = BlackBoardYellow
             )
         )
         Text(
@@ -121,7 +127,8 @@ public fun EditDeckScreen(
             style = MaterialTheme.typography.bodySmall.copy(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = BlackBoardYellow
             )
         )
 
@@ -136,6 +143,7 @@ public fun EditDeckScreen(
             Text(
                 "Return to Main Menu",
                 fontFamily = Pixel // Applies Pixel font to the button text
+                ,color = BlackBoardYellow
             )
         }
     }

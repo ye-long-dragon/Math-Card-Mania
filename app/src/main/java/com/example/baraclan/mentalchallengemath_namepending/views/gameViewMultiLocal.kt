@@ -37,6 +37,7 @@ import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.models.hand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.RandomHand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.evaluateEquation
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import com.example.baraclan.mentalchallengemath_namepending.views.*
 import com.example.baraclan.mentalchallengemath_namepending.views.Pixel
 
@@ -63,7 +64,7 @@ fun LocalMultiplayer(
                 .weight(1f) // Takes up half the screen vertically
                 .fillMaxWidth()
                 .rotate(180f) ,
-            color = Color.Transparent// Apply 180-degree rotation for vertical flip
+            color = Color.Blue// Apply 180-degree rotation for vertical flip
         ) {
             HalfScreen(
                 initialDeck = deck(initialGlobalDeck.name, initialGlobalDeck.getAllCardsWithCounts()),
@@ -80,7 +81,7 @@ fun LocalMultiplayer(
             modifier = Modifier
                 .weight(1f) // Takes up the other half of the screen vertically
                 .fillMaxWidth(),
-            color = Color.Transparent
+            color = Color.Red
         ) {
             HalfScreen(
                 initialDeck = deck(initialGlobalDeck.name, initialGlobalDeck.getAllCardsWithCounts()),
@@ -172,13 +173,14 @@ fun HalfScreen(
                 style = MaterialTheme.typography.headlineLarge,
                 fontFamily = Pixel,
                 fontSize = 48.sp,
-                color = MaterialTheme.colorScheme.primary
+                color = BlackBoardYellow
             )
             Text(
                 text = "Final Score: $currentScore",
                 style = MaterialTheme.typography.headlineMedium,
                 fontFamily = Pixel,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 16.dp),
+                color = BlackBoardYellow
             )
             Row(
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -191,12 +193,12 @@ fun HalfScreen(
                     gameFinished = false
                     startNewRound()
                 }) {
-                    Text("Play Again", fontFamily = Pixel)
+                    Text("Play Again", fontFamily = Pixel,color = BlackBoardYellow)
                 }
                 Button(onClick = {
                     onGameCompleted() // Call the passed-in callback to return to multiplayer menu
                 }) {
-                    Text("Return to Menu", fontFamily = Pixel)
+                    Text("Return to Menu", fontFamily = Pixel,color = BlackBoardYellow)
                 }
             }
         }
@@ -228,7 +230,8 @@ fun HalfScreen(
                 text = "Select cards from your hand:",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 8.dp),
-                fontFamily = Pixel
+                fontFamily = Pixel,
+                color = BlackBoardYellow
             )
             InputCardsDisplay(playerHand = playerHandState, onCardClick = onHandCardClick)
 
@@ -259,7 +262,7 @@ fun HalfScreen(
                         currentTurn++
                     }
                 }) {
-                    Text("Submit Equation", fontFamily = Pixel)
+                    Text("Submit Equation", fontFamily = Pixel,color = BlackBoardYellow)
                 }
                 Button(onClick = {
                     // Return equation cards to hand
@@ -268,7 +271,7 @@ fun HalfScreen(
                     }
                     equationCards.clear()
                 }) {
-                    Text("Clear Equation", fontFamily = Pixel)
+                    Text("Clear Equation", fontFamily = Pixel,color = BlackBoardYellow)
                 }
             }
         }

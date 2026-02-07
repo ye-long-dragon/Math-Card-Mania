@@ -32,7 +32,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.example.baraclan.mentalchallengemath_namepending.R
-
+import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 
 
 @Composable
@@ -58,7 +58,7 @@ public fun LoginScreen(
                 modifier = Modifier.padding(bottom = 32.dp),
                 fontSize = 42.sp,
                 fontFamily = Pixel,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,color = BlackBoardYellow
             )
 
             // Username
@@ -103,14 +103,15 @@ public fun LoginScreen(
                 )
                 Text(
                     text = "Remember me",
-                    fontFamily = Pixel
+                    fontFamily = Pixel,
+                    color = BlackBoardYellow
                 )
             }
 
             // Forgot password button
             Text(
                 text = "Forgot password?",
-                color = MaterialTheme.colorScheme.primary,
+                color = BlackBoardYellow,
                 modifier = Modifier
                     .padding(bottom = 16.dp)
                     .clickable(
@@ -119,7 +120,8 @@ public fun LoginScreen(
                     ) {
                         onForgotPassword() // Trigger the callback here
                     },
-                fontFamily = Pixel
+                fontFamily = Pixel,
+
             )
 
             // Login button
@@ -146,6 +148,7 @@ public fun LoginScreen(
                 Text(
                     text = "Login",
                     fontFamily = Pixel // Assuming Pixel is a custom FontFamily
+                    ,color = BlackBoardYellow
                 )
             }
 
@@ -155,7 +158,8 @@ public fun LoginScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Don't have an account?",
-                    fontFamily = Pixel
+                    fontFamily = Pixel,
+                    color = BlackBoardYellow
                 )
             }
 
@@ -163,7 +167,7 @@ public fun LoginScreen(
 
             Text(
                 text = "Sign Up", // Text for the Sign Up link
-                color = MaterialTheme.colorScheme.primary,
+                color = BlackBoardYellow,
                 modifier = Modifier
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -198,7 +202,8 @@ public fun SignInScreen(
             Text(
                 text = "Create Your Account",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 32.dp),
+                color = BlackBoardYellow
             )
 
             // Email
@@ -253,21 +258,21 @@ public fun SignInScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Create Account",fontFamily = Pixel)
+                Text("Create Account",fontFamily = Pixel,color = BlackBoardYellow)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Option to go back to Login screen
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Already have an account?",fontFamily = Pixel)
+                Text("Already have an account?",fontFamily = Pixel,color = BlackBoardYellow)
             }
             Spacer(modifier = Modifier.height(16.dp))
 
              Row(verticalAlignment = Alignment.CenterVertically){
                   Text(
                       text = " Log In",
-                      color = MaterialTheme.colorScheme.primary,
+                      color = BlackBoardYellow,
                       modifier = Modifier
                           .clickable(
                               interactionSource = remember { MutableInteractionSource() },
@@ -302,7 +307,8 @@ public fun ForgotPasswordScreen(
                 text = "Forgot Password?",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 32.dp),
-                fontFamily = Pixel
+                fontFamily = Pixel,
+                color = BlackBoardYellow
             )
 
             // Email input
@@ -327,7 +333,7 @@ public fun ForgotPasswordScreen(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = email.isNotBlank() // Enable button only if email is not blank
             ) {
-                Text("Reset Password", fontFamily = Pixel)
+                Text("Reset Password", fontFamily = Pixel,color = BlackBoardYellow)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -342,7 +348,7 @@ public fun ForgotPasswordScreen(
             Row(verticalAlignment = Alignment.CenterVertically){
                 Text(
                     text = " Log In",
-                    color = MaterialTheme.colorScheme.primary,
+                    color = BlackBoardYellow,
                     modifier = Modifier
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
