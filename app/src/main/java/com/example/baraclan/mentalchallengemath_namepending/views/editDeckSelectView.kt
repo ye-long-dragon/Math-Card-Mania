@@ -53,11 +53,8 @@ fun DeckSelectScreen(
     // Dummy data for demonstration. In a real application, this would typically
     // come from a ViewModel, database, or a repository.
     val sampleDecks = listOf(
-        Deck("basic_arithmetic", "Basic Arithmetic", R.drawable.ic_launcher_foreground), // Use your actual drawable here
-        Deck("multiplication", "Multiplication Mania", R.drawable.ic_launcher_background), // Use your actual drawable here
-        Deck("division", "Division Decimators", R.drawable.ic_launcher_foreground),
-        Deck("fractions", "Fraction Frenzy", R.drawable.ic_launcher_background),
-        Deck("algebra_intro", "Intro to Algebra", R.drawable.ic_launcher_foreground)
+        Deck("starting_deck", "Starting Deck", R.drawable.ic_launcher_foreground), // Use your actual drawable here
+
     )
 
     Column(
