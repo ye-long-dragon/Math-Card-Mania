@@ -3,7 +3,7 @@ package com.example.baraclan.mentalchallengemath_namepending.scripts
 import com.example.baraclan.mentalchallengemath_namepending.models.cardContainer
 import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
 import com.example.baraclan.mentalchallengemath_namepending.models.deck
-import com.example.baraclan.mentalchallengemath_namepending.models.hand
+import com.example.baraclan.mentalchallengemath_namepending.models.*
 import kotlin.random.Random
 
 fun transferCards(card: cardGame, count: Int, from: cardContainer, to: cardContainer) {
@@ -76,9 +76,36 @@ fun RandomHand(Deck: deck): hand {
     return randomHand
 }
 
-// Placeholder for equation evaluation logic
- fun evaluateEquation(equation: List<cardGame>): Double {
+// Placeholder for equation evaluation logic (kept for backward compatibility)
+fun evaluateEquation(equation: List<cardGame>): Double {
     if (equation.isEmpty()) return 0.0
-    // TODO: Implement actual parsing and evaluation here
-    return equation.firstNotNullOfOrNull { it.numberValue?.toDouble() } ?: 0.0
+    try {
+        return PemdasEvaluator.evaluate(equation).toDouble()
+    } catch (e: Exception) {
+        return 0.0
+    }
 }
+
+// PEMDAS evaluation function using the PemdasEvaluator
+fun evaluateEquationWithPemdas(equation: List<cardGame>): Int {
+    require(equation.isNotEmpty()) { "Equation cannot be empty." }
+    return PemdasEvaluator.evaluate(equation)
+}
+
+// Get equation as a display string
+fun getEquationString(equation: List<cardGame>): String {
+    return equation.joinToString(" ") {
+        when (it.type) {
+            cardType.NUMBER -> it.numberValue.toString()
+            cardType.OPERATOR -> when (it.operator) {
+                Operator.ADD -> "+"
+                Operator.SUBTRACT -> "-"
+                Operator.MULTIPLY -> "×"
+                Operator.DIVIDE -> "÷"
+                null -> "?"
+            }
+        }
+    }
+}
+
+

@@ -1,6 +1,6 @@
 package com.example.baraclan.mentalchallengemath_namepending
 
-import LocalMultiplayer
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -35,11 +35,13 @@ object NavRoutes {
     const val ForgotPassword = "forgot_password"
     const val AboutScreen = "about_screen"
     const val EditDeck = "edit_Deck"
-    const val GameSingle = "game_single" // ADDED: New route for the GameView
+    const val GameSingle = "game_single"
     const val MultiplayerView = "multiplayer_view"
     const val LocalMultiplayer = "local_multiplayer"
     const val OnlineMultiplayer = "online_multiplayer"
     const val EditDeckSelect = "edit_deck_select"
+    const val Tutorial = "tutorial"
+    const val Profile = "profile"
 }
 
 class MainActivity : ComponentActivity() {
@@ -197,11 +199,17 @@ public fun AppNavigation(
                 onEditDeckClick = {
                     navController.navigate(NavRoutes.EditDeckSelect)
                 },
-                onStartGameClick = { // ADDED: New callback for starting the game
+                onStartGameClick = {
                     navController.navigate(NavRoutes.GameSingle)
                 },
                 onMultiplayerGameClick = {
                     navController.navigate(NavRoutes.MultiplayerView)
+                },
+                onTutorialClick = {
+                    navController.navigate(NavRoutes.Tutorial)
+                },
+                onProfileClick = {
+                    navController.navigate(NavRoutes.Profile)
                 }
             )
         }
@@ -238,13 +246,13 @@ public fun AppNavigation(
                 onReturnMenu = { // Callback to navigate back to the menu
                     navController.popBackStack()
                 },
-                onClickDeck = { cardToRemove ->
+                onDeckCardClick = { cardToRemove ->
                     // Create a new deck instance based on the current state
                     val newDeck = deck(currentDeck.name, currentDeck.getAllCardsWithCounts())
                     newDeck.removeCard(cardToRemove, 1) // Remove one instance of the card type
                     onUpdateDeck(newDeck) // Notify MainActivity to update its state
                 },
-                onClickCollection = { cardToAdd ->
+                onCollectionCardClick = { cardToAdd ->
                     // Create a new deck instance based on the current state
                     val newDeck = deck(currentDeck.name, currentDeck.getAllCardsWithCounts())
                     newDeck.addCard(cardToAdd, 1) // Add one instance of the card type
@@ -252,9 +260,33 @@ public fun AppNavigation(
                 }
             )
         }
-        // ADDED: Composable for the GameView
+        // Composable for the GameView
         composable(NavRoutes.GameSingle) {
-            GameView(currentDeck) // Your GameView Composable is displayed here
+            GameView(
+                initialDeck = currentDeck,
+                onGameComplete = {
+                    navController.navigate(NavRoutes.Menu) {
+                        popUpTo(NavRoutes.GameSingle) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(NavRoutes.Tutorial) {
+            TutorialView(
+                initialDeck = currentDeck,
+                onNavigateBack = {
+                    navController.navigate(NavRoutes.Menu) {
+                        popUpTo(NavRoutes.Tutorial) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(NavRoutes.Profile) {
+            ProfileView(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
         composable(NavRoutes.MultiplayerView){
             MultiplayerSelectScreen(

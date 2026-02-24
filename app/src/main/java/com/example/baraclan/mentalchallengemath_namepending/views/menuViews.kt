@@ -36,8 +36,10 @@ fun menu(
     onLogout: () -> Unit,
     onAboutClick: () -> Unit,
     onEditDeckClick: () -> Unit,
-    onStartGameClick: () -> Unit, // ADDED: New parameter
-    onMultiplayerGameClick:()->Unit
+    onStartGameClick: () -> Unit,
+    onMultiplayerGameClick:()->Unit,
+    onTutorialClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -49,7 +51,7 @@ fun menu(
         Text("Main Menu", style = MaterialTheme.typography.headlineLarge,fontFamily = Pixel,color = BlackBoardYellow)
         Spacer(modifier = Modifier.height(32.dp))
 
-        Button(onClick = onStartGameClick) { // ADDED: Button to start the game
+        Button(onClick = onStartGameClick) {
             Text("Start Game",fontFamily = Pixel)
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -59,8 +61,18 @@ fun menu(
         }
         Spacer(modifier =  Modifier.height(16.dp))
 
+        Button(onClick = onTutorialClick) {
+            Text("Tutorial",fontFamily = Pixel)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
         Button(onClick = onEditDeckClick) {
             Text("Edit Deck",fontFamily = Pixel)
+        }
+        Spacer(modifier =  Modifier.height(16.dp))
+
+        Button(onClick = onProfileClick) {
+            Text("Profile",fontFamily = Pixel)
         }
         Spacer(modifier =  Modifier.height(16.dp))
 
