@@ -1,33 +1,30 @@
 package com.example.baraclan.mentalchallengemath_namepending
 
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.gameTheme
 import com.example.baraclan.mentalchallengemath_namepending.views.*
 import com.example.baraclan.mentalchallengemath_namepending.models.*
-import java.util.UUID // Import for generating unique IDs
+import java.util.UUID
 
-// Define your routes
+// ─────────────────────────────────────────────────────────────
+// Nav routes
+// ─────────────────────────────────────────────────────────────
 object NavRoutes {
     const val Login = "login"
     const val Menu = "menu"
@@ -44,8 +41,11 @@ object NavRoutes {
     const val Profile = "profile"
 }
 
+// ─────────────────────────────────────────────────────────────
+// MainActivity
+// ─────────────────────────────────────────────────────────────
 class MainActivity : ComponentActivity() {
-    public var playerDeckState by mutableStateOf(initDeck())
+    var playerDeckState by mutableStateOf(initDeck())
 
     val playerDeck: deck
         get() = playerDeckState
@@ -62,18 +62,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             gameTheme {
-                Box(modifier = Modifier.fillMaxSize()) { // <-- The Box
-                    Image( // <-- The Image
-                        painter = painterResource(id = R.drawable.background), // Make sure this is correct
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.background),
                         contentDescription = "App Background",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        alpha = 0.6f // Or adjust as desired
+                        alpha = 0.6f
                     )
-
-                    Surface( // <-- The Root Surface, MUST be transparent
+                    Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = Color.Transparent // <-- THIS IS CRUCIAL
+                        color = Color.Transparent
                     ) {
                         AppNavigation(
                             currentDeck = playerDeck,
@@ -85,43 +84,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-// Utility function to initialize the player's starting deck
-public fun initDeck(): deck {
-    val playerDeck = deck("Player Deck") // Initialize an empty deck
+
+// ─────────────────────────────────────────────────────────────
+// Deck + Collection initializers
+// ─────────────────────────────────────────────────────────────
+fun initDeck(): deck {
+    val playerDeck = deck("Player Deck")
     val initialCardsConfig = listOf(
         "0" to 2, "1" to 2, "2" to 2, "3" to 2, "4" to 2,
         "5" to 2, "6" to 2, "7" to 2, "8" to 2, "9" to 2,
         "+" to 2, "-" to 2, "*" to 2, "/" to 2
     )
-
     initialCardsConfig.forEach { (cardString, count) ->
-        val baseCard = createCardFromConfig(cardString)
-        playerDeck.addCard(baseCard, count)
+        playerDeck.addCard(createCardFromConfig(cardString), count)
     }
-
     println("Deck Initialized: ${playerDeck.getTotalCount()} total cards.")
     return playerDeck
 }
 
-// Utility function to create a collection of all available cards
-public fun fullCollection(): collection {
+fun fullCollection(): collection {
     val availableCards = collection("Full Collection")
     val allPossibleCardConfigs = listOf(
         "0" to 1, "1" to 1, "2" to 1, "3" to 1, "4" to 1,
         "5" to 1, "6" to 1, "7" to 1, "8" to 1, "9" to 1,
         "+" to 1, "-" to 1, "*" to 1, "/" to 1
-        // Add more unique cards if needed for the collection
     )
-
     allPossibleCardConfigs.forEach { (cardString, count) ->
-        val baseCard = createCardFromConfig(cardString)
-        availableCards.addCard(baseCard, count)
+        availableCards.addCard(createCardFromConfig(cardString), count)
     }
     println("Collection Initialized: ${availableCards.getTotalCount()} total card types.")
     return availableCards
 }
 
-// Helper to create cardGame instances consistently for initDeck and fullCollection
 private fun createCardFromConfig(cardString: String): cardGame {
     return when (cardString) {
         "+", "-", "*", "/" -> {
@@ -133,7 +127,7 @@ private fun createCardFromConfig(cardString: String): cardGame {
                 else -> throw IllegalArgumentException("Unknown operator: $cardString")
             }
             cardGame(
-                id = UUID.randomUUID().toString(), // Use UUID for unique instance ID
+                id = UUID.randomUUID().toString(),
                 name = "Operator ($cardString)",
                 type = cardType.OPERATOR,
                 operator = operatorType
@@ -141,36 +135,37 @@ private fun createCardFromConfig(cardString: String): cardGame {
         }
         else -> {
             val numberValue = cardString.toIntOrNull()
-            if (numberValue != null) {
-                cardGame(
-                    id = UUID.randomUUID().toString(), // Use UUID for unique instance ID
-                    name = "Number ($cardString)",
-                    type = cardType.NUMBER,
-                    numberValue = numberValue
-                )
-            } else {
-                throw IllegalArgumentException("Could not parse '$cardString' as a number or known operator.")
-            }
+                ?: throw IllegalArgumentException("Could not parse '$cardString'")
+            cardGame(
+                id = UUID.randomUUID().toString(),
+                name = "Number ($cardString)",
+                type = cardType.NUMBER,
+                numberValue = numberValue
+            )
         }
     }
 }
 
-
+// ─────────────────────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────────────────────
 @Composable
-public fun AppNavigation(
+fun AppNavigation(
     currentDeck: deck,
     onUpdateDeck: (deck) -> Unit
 ) {
     val navController = rememberNavController()
-
-    // Create the full collection once
+    val context = LocalContext.current
     val availableCollection = fullCollection()
 
+    // Load saved decks from local storage — available throughout the nav graph
+    val savedDecks by DeckRepository.getDecksFlow(context).collectAsState(initial = emptyList())
+
     NavHost(
-        navController=navController,
+        navController = navController,
         startDestination = NavRoutes.Login
-    ){
-        //Routes
+    ) {
+
         composable(NavRoutes.Login) {
             LoginScreen(
                 onLoginSuccess = {
@@ -178,14 +173,28 @@ public fun AppNavigation(
                         popUpTo(NavRoutes.Login) { inclusive = true }
                     }
                 },
-                onNavigateToSignUp = {
-                    navController.navigate(NavRoutes.SignIn)
-                },
-                onForgotPassword = {
-                    navController.navigate(NavRoutes.ForgotPassword)
+                onNavigateToSignUp = { navController.navigate(NavRoutes.SignIn) },
+                onForgotPassword = { navController.navigate(NavRoutes.ForgotPassword) }
+            )
+        }
+
+        composable(NavRoutes.SignIn) {
+            SignUpScreen(
+                onNavigateToLogin = { navController.popBackStack() },
+                onSignUpSuccess = {
+                    navController.navigate(NavRoutes.Menu) {
+                        popUpTo(NavRoutes.Login) { inclusive = true }
+                    }
                 }
             )
         }
+
+        composable(NavRoutes.ForgotPassword) {
+            ForgotPasswordScreen(
+                onNavigateToLogin = { navController.popBackStack() }
+            )
+        }
+
         composable(NavRoutes.Menu) {
             menu(
                 onLogout = {
@@ -193,74 +202,32 @@ public fun AppNavigation(
                         popUpTo(NavRoutes.Menu) { inclusive = true }
                     }
                 },
-                onAboutClick = {
-                    navController.navigate(NavRoutes.AboutScreen)
-                },
-                onEditDeckClick = {
-                    navController.navigate(NavRoutes.EditDeckSelect)
-                },
-                onStartGameClick = {
-                    navController.navigate(NavRoutes.GameSingle)
-                },
-                onMultiplayerGameClick = {
-                    navController.navigate(NavRoutes.MultiplayerView)
-                },
-                onTutorialClick = {
-                    navController.navigate(NavRoutes.Tutorial)
-                },
-                onProfileClick = {
-                    navController.navigate(NavRoutes.Profile)
-                }
+                onAboutClick = { navController.navigate(NavRoutes.AboutScreen) },
+                onEditDeckClick = { navController.navigate(NavRoutes.EditDeckSelect) },
+                onStartGameClick = { navController.navigate(NavRoutes.GameSingle) },
+                onMultiplayerGameClick = { navController.navigate(NavRoutes.MultiplayerView) },
+                onTutorialClick = { navController.navigate(NavRoutes.Tutorial) },
+                onProfileClick = { navController.navigate(NavRoutes.Profile) }
             )
         }
-        composable(NavRoutes.SignIn){
-            SignInScreen(
-                onNavigateToLogin = {
-                    navController.popBackStack()
-                },
-                onSignInSuccess = {
-                    navController.navigate(NavRoutes.Menu) {
-                        popUpTo(NavRoutes.Login) { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable(NavRoutes.ForgotPassword) {
-            ForgotPasswordScreen(
-                onNavigateToLogin = {
-                    navController.popBackStack()
-                }
-            )
-        }
-        composable(NavRoutes.AboutScreen){
+
+        composable(NavRoutes.AboutScreen) {
             AboutScreen(
-                onNavigateToMenu = {
-                    navController.navigate(NavRoutes.Menu)
-                }
+                onNavigateToMenu = { navController.navigate(NavRoutes.Menu) }
             )
         }
-        composable(NavRoutes.EditDeck){
-            EditDeckScreen(
-                cardDeck = currentDeck, // Pass the current Deck from MainActivity
-                collection = availableCollection, // Pass the full collection of available cards
-                onReturnMenu = { // Callback to navigate back to the menu
-                    navController.popBackStack()
-                },
-                onDeckCardClick = { cardToRemove ->
-                    // Create a new deck instance based on the current state
-                    val newDeck = deck(currentDeck.name, currentDeck.getAllCardsWithCounts())
-                    newDeck.removeCard(cardToRemove, 1) // Remove one instance of the card type
-                    onUpdateDeck(newDeck) // Notify MainActivity to update its state
-                },
-                onCollectionCardClick = { cardToAdd ->
-                    // Create a new deck instance based on the current state
-                    val newDeck = deck(currentDeck.name, currentDeck.getAllCardsWithCounts())
-                    newDeck.addCard(cardToAdd, 1) // Add one instance of the card type
-                    onUpdateDeck(newDeck) // Notify MainActivity to update its state
-                }
+
+        // EditDeckSelect → DeckManagerScreen (list of all saved decks)
+        composable(NavRoutes.EditDeckSelect) {
+            DeckManagerScreen(
+                defaultDeck = initDeck(),
+                availableCollection = availableCollection,
+                onReturnMenu = { navController.popBackStack() }
             )
         }
-        // Composable for the GameView
+
+
+
         composable(NavRoutes.GameSingle) {
             GameView(
                 initialDeck = currentDeck,
@@ -271,6 +238,7 @@ public fun AppNavigation(
                 }
             )
         }
+
         composable(NavRoutes.Tutorial) {
             TutorialView(
                 initialDeck = currentDeck,
@@ -281,37 +249,31 @@ public fun AppNavigation(
                 }
             )
         }
+
         composable(NavRoutes.Profile) {
             ProfileView(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable(NavRoutes.MultiplayerView){
-            MultiplayerSelectScreen(
-                onNavigateToMenu = {
-                    navController.navigate(NavRoutes.Menu)
-                },
-                onNavigateToOnline = {
 
-                },
-                onNavigateToLocal = {
-                    navController.navigate(NavRoutes.LocalMultiplayer)
-                }
+        composable(NavRoutes.MultiplayerView) {
+            MultiplayerSelectScreen(
+                onNavigateToMenu = { navController.navigate(NavRoutes.Menu) },
+                onNavigateToOnline = { /* TODO */ },
+                onNavigateToLocal = { navController.navigate(NavRoutes.LocalMultiplayer) }
             )
         }
-        composable(NavRoutes.LocalMultiplayer){
+
+        // LocalMultiplayer now receives savedDecks for deck selection
+        composable(NavRoutes.LocalMultiplayer) {
             LocalMultiplayer(
-                onReturntoMultiplayerMenu = {
-                    navController.navigate(NavRoutes.MultiplayerView)
+                availableDecks = savedDecks,
+                onReturnToMultiplayerMenu = {
+                    navController.navigate(NavRoutes.MultiplayerView) {
+                        popUpTo(NavRoutes.LocalMultiplayer) { inclusive = true }
+                    }
                 }
             )
-        }
-        composable(NavRoutes.EditDeckSelect){
-            DeckSelectScreen(onDeckSelected = {
-                navController.navigate(NavRoutes.EditDeck)
-            })
         }
     }
 }

@@ -1,24 +1,21 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
 import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
 import com.example.baraclan.mentalchallengemath_namepending.models.collection
 import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
+import kotlinx.coroutines.launch
 
 @Composable
 fun EditDeckScreen(
@@ -29,10 +26,15 @@ fun EditDeckScreen(
     onCollectionCardClick: (cardGame) -> Unit = {},
 ) {
     val cardCount = cardDeck.getTotalCount()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    var saveStatus by remember { mutableStateOf<String?>(null) }
+    val isOverLimit = cardCount > 20
+
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        // ── Title ─────────────────────────────────────────────
         Text(
             text = "Edit Deck",
             modifier = Modifier
@@ -46,8 +48,10 @@ fun EditDeckScreen(
             )
         )
 
+        // ── Deck count (red if over limit) ────────────────────
         Text(
-            text = "Your Played Deck ($cardCount/20)",
+            text = "Your Played Deck ($cardCount/20)" +
+                    if (isOverLimit) " — Too many cards!" else "",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
@@ -55,10 +59,11 @@ fun EditDeckScreen(
                 fontFamily = FontFamily.Monospace,
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
-                color = if (cardCount > 20) MaterialTheme.colorScheme.error else BlackBoardYellow
+                color = if (isOverLimit) MaterialTheme.colorScheme.error else BlackBoardYellow
             )
         )
 
+        // ── Deck horizontal scroll ────────────────────────────
         DeckHorizontalScroll(
             deckCards = cardDeck.getAllCardsAsList(),
             onCardClick = onDeckCardClick,
@@ -67,8 +72,9 @@ fun EditDeckScreen(
                 .padding(bottom = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
+        // ── Collection ────────────────────────────────────────
         Text(
             text = "Your Collection",
             modifier = Modifier
@@ -90,44 +96,78 @@ fun EditDeckScreen(
                 .weight(1f)
         )
 
+        // ── Hints ─────────────────────────────────────────────
         Text(
-            text = "Press the deck to remove cards",
+            text = "Tap deck cards to remove  •  Tap collection cards to add",
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 2.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall.copy(
                 fontFamily = FontFamily.Monospace,
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                color = BlackBoardYellow
-            )
-        )
-        Text(
-            text = "Press the collection to add cards",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 2.dp)
-                .padding(bottom = 8.dp),
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                color = BlackBoardYellow
+                fontSize = 12.sp,
+                color = BlackBoardYellow.copy(alpha = 0.7f)
             )
         )
 
-
-        Button(
-            onClick = onReturnMenu,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        // ── Save status message ───────────────────────────────
+        saveStatus?.let {
             Text(
-                "Return to Main Menu",
+                text = it,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 fontFamily = FontFamily.Monospace,
-                color = BlackBoardYellow
+                textAlign = TextAlign.Center,
+                fontSize = 13.sp,
+                color = if (it.startsWith("✓")) BlackBoardYellow else MaterialTheme.colorScheme.error
             )
+        }
+
+        // ── Buttons ───────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Save deck button
+            Button(
+                onClick = {
+                    if (isOverLimit) {
+                        saveStatus = "Deck has too many cards (max 20)"
+                        return@Button
+                    }
+                    scope.launch {
+                        try {
+                            DeckRepository.saveDeck(context, cardDeck)
+                            saveStatus = "✓ Deck saved!"
+                        } catch (e: Exception) {
+                            saveStatus = "Save failed: ${e.message}"
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isOverLimit
+            ) {
+                Text(
+                    "Save Deck",
+                    fontFamily = FontFamily.Monospace,
+                    color = BlackBoardYellow
+                )
+            }
+
+            // Return button
+            OutlinedButton(
+                onClick = onReturnMenu,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    "Return to Menu",
+                    fontFamily = FontFamily.Monospace,
+                    color = BlackBoardYellow
+                )
+            }
         }
     }
 }

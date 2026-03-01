@@ -1,64 +1,71 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.baraclan.mentalchallengemath_namepending.R
+import androidx.compose.ui.unit.sp
+import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
 import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeckSelectScreen(
-    onDeckSelected: (Deck) -> Unit = {}
+    onDeckSelected: (deck) -> Unit = {}
 ) {
-    var decks by remember {
-        mutableStateOf(
-            listOf(
-                Deck("starting_deck", "Starting Deck", R.drawable.ic_launcher_foreground),
-            )
-        )
-    }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Load decks from local storage
+    val savedDecks by DeckRepository.getDecksFlow(context).collectAsState(initial = emptyList())
+
     var inSelectionMode by remember { mutableStateOf(false) }
-    var selectedDecks by remember { mutableStateOf(emptySet<String>()) }
+    var selectedDeckNames by remember { mutableStateOf(emptySet<String>()) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Choose your Deck") },
+                title = {
+                    Text(
+                        "Choose your Deck",
+                        fontFamily = FontFamily.Monospace,
+                        color = BlackBoardYellow
+                    )
+                },
                 actions = {
                     if (inSelectionMode) {
                         IconButton(onClick = {
-                            decks = decks.filter { it.id !in selectedDecks }
+                            scope.launch {
+                                selectedDeckNames.forEach { name ->
+                                    DeckRepository.deleteDeck(context, name)
+                                }
+                            }
                             inSelectionMode = false
-                            selectedDecks = emptySet()
+                            selectedDeckNames = emptySet()
                         }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete selected decks")
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete selected decks",
+                                tint = BlackBoardYellow
+                            )
                         }
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Implement add new deck */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add new deck")
-            }
         }
     ) { paddingValues ->
         Column(
@@ -68,35 +75,69 @@ fun DeckSelectScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(decks, key = { it.id }) { deck ->
-                    val isSelected = deck.id in selectedDecks
-                    DeckTile(
-                        deck = deck,
-                        isSelected = isSelected,
-                        inSelectionMode = inSelectionMode,
-                        onClick = {
-                            if (inSelectionMode) {
-                                selectedDecks = if (isSelected) {
-                                    selectedDecks - deck.id
-                                } else {
-                                    selectedDecks + deck.id
-                                }
-                            } else {
-                                onDeckSelected(deck)
-                            }
-                        },
-                        onLongClick = {
-                            if (!inSelectionMode) {
-                                inSelectionMode = true
-                                selectedDecks = selectedDecks + deck.id
-                            }
-                        }
+            if (savedDecks.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "No saved decks yet.",
+                            fontFamily = FontFamily.Monospace,
+                            color = BlackBoardYellow,
+                            fontSize = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Build a deck from the Edit Deck screen first!",
+                            fontFamily = FontFamily.Monospace,
+                            color = BlackBoardYellow.copy(alpha = 0.7f),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                if (inSelectionMode) {
+                    Text(
+                        text = "Long-press to select • Tap trash to delete",
+                        fontFamily = FontFamily.Monospace,
+                        color = BlackBoardYellow.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(savedDecks, key = { it.name }) { deck ->
+                        val isSelected = deck.name in selectedDeckNames
+                        DeckTile(
+                            deck = deck,
+                            isSelected = isSelected,
+                            inSelectionMode = inSelectionMode,
+                            onClick = {
+                                if (inSelectionMode) {
+                                    selectedDeckNames = if (isSelected)
+                                        selectedDeckNames - deck.name
+                                    else
+                                        selectedDeckNames + deck.name
+                                } else {
+                                    onDeckSelected(deck)
+                                }
+                            },
+                            onLongClick = {
+                                if (!inSelectionMode) {
+                                    inSelectionMode = true
+                                    selectedDeckNames = selectedDeckNames + deck.name
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -106,7 +147,7 @@ fun DeckSelectScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DeckTile(
-    deck: Deck,
+    deck: deck,
     isSelected: Boolean,
     inSelectionMode: Boolean,
     onClick: () -> Unit,
@@ -114,15 +155,18 @@ fun DeckTile(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .height(140.dp)
+            .fillMaxWidth(0.85f)
+            .height(80.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else BlackBoardYellow
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                BlackBoardYellow
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -130,25 +174,31 @@ fun DeckTile(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp),
+                    .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(id = deck.imageResId),
-                    contentDescription = "Deck image for ${deck.name}",
-                    modifier = Modifier
-                        .size(80.dp)
-                        .padding(bottom = 8.dp)
-                )
                 Text(
                     text = deck.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    else
+                        MaterialTheme.colorScheme.surface,
                     textAlign = TextAlign.Center
                 )
+                Text(
+                    text = "${deck.getTotalCount()} cards",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    else
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                )
             }
+
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
