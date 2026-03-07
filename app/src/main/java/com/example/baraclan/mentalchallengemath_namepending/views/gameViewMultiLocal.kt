@@ -324,9 +324,20 @@ fun HalfScreen(
         ) {
             Button(
                 onClick = {
-                    val equationResult: Double = evaluateEquation(equationCards)
+                    val equationResult: Double? = evaluateEquation(equationCards)
                     val currentTargetGoal = gameGoals[currentGoalIndex]
-                    if (equationResult == currentTargetGoal) {
+                    val round = (currentGoalIndex + 1).coerceIn(1, 10)
+                    val margin = when {
+                        round >= 9 -> 0.15
+                        round >= 7 -> 0.10
+                        round >= 4 -> 0.05
+                        else -> 0.0
+                    }
+                    val hit = if (equationResult == null) false
+                    else if (margin == 0.0) kotlin.math.abs(equationResult - currentTargetGoal) < 0.0001
+                    else equationResult in (currentTargetGoal * (1 - margin))..(currentTargetGoal * (1 + margin))
+
+                    if (hit) {
                         currentScore += 100
                         currentGoalIndex++
                         startNewRound()

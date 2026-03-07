@@ -36,6 +36,8 @@ object NavRoutes {
     const val MultiplayerView = "multiplayer_view"
     const val LocalMultiplayer = "local_multiplayer"
     const val OnlineMultiplayer = "online_multiplayer"
+    const val OnlineLobby = "online_lobby"
+    const val OnlineGame = "online_game"
     const val EditDeckSelect = "edit_deck_select"
     const val Tutorial = "tutorial"
     const val Profile = "profile"
@@ -91,9 +93,17 @@ class MainActivity : ComponentActivity() {
 fun initDeck(): deck {
     val playerDeck = deck("Player Deck")
     val initialCardsConfig = listOf(
+        // Numbers 0-9
         "0" to 2, "1" to 2, "2" to 2, "3" to 2, "4" to 2,
         "5" to 2, "6" to 2, "7" to 2, "8" to 2, "9" to 2,
-        "+" to 2, "-" to 2, "*" to 2, "/" to 2
+        // Basic operators
+        "+" to 2, "-" to 2, "*" to 2, "/" to 2,
+        // Functions
+        "sin" to 1, "cos" to 1, "ln" to 1, "log10" to 1,
+        // Constants
+        "pi" to 1, "euler" to 1,
+        // Special two-slot cards
+        "fraction" to 1, "exponent" to 1
     )
     initialCardsConfig.forEach { (cardString, count) ->
         playerDeck.addCard(createCardFromConfig(cardString), count)
@@ -105,9 +115,17 @@ fun initDeck(): deck {
 fun fullCollection(): collection {
     val availableCards = collection("Full Collection")
     val allPossibleCardConfigs = listOf(
+        // Numbers 0-9
         "0" to 1, "1" to 1, "2" to 1, "3" to 1, "4" to 1,
         "5" to 1, "6" to 1, "7" to 1, "8" to 1, "9" to 1,
-        "+" to 1, "-" to 1, "*" to 1, "/" to 1
+        // Basic operators
+        "+" to 1, "-" to 1, "*" to 1, "/" to 1,
+        // Functions
+        "sin" to 1, "cos" to 1, "ln" to 1, "log10" to 1,
+        // Constants
+        "pi" to 1, "euler" to 1,
+        // Special two-slot cards
+        "fraction" to 1, "exponent" to 1
     )
     allPossibleCardConfigs.forEach { (cardString, count) ->
         availableCards.addCard(createCardFromConfig(cardString), count)
@@ -118,21 +136,31 @@ fun fullCollection(): collection {
 
 private fun createCardFromConfig(cardString: String): cardGame {
     return when (cardString) {
-        "+", "-", "*", "/" -> {
-            val operatorType = when (cardString) {
+        // Basic operators
+        "+", "-", "*", "/" -> cardGame(
+            id = UUID.randomUUID().toString(),
+            name = "Operator ($cardString)",
+            type = cardType.OPERATOR,
+            operator = when (cardString) {
                 "+" -> Operator.ADD
                 "-" -> Operator.SUBTRACT
                 "*" -> Operator.MULTIPLY
                 "/" -> Operator.DIVIDE
                 else -> throw IllegalArgumentException("Unknown operator: $cardString")
             }
-            cardGame(
-                id = UUID.randomUUID().toString(),
-                name = "Operator ($cardString)",
-                type = cardType.OPERATOR,
-                operator = operatorType
-            )
-        }
+        )
+        // Functions
+        "sin"   -> cardGame(id = UUID.randomUUID().toString(), name = "sin",     type = cardType.FUNCTION, operator = Operator.SIN)
+        "cos"   -> cardGame(id = UUID.randomUUID().toString(), name = "cos",     type = cardType.FUNCTION, operator = Operator.COS)
+        "ln"    -> cardGame(id = UUID.randomUUID().toString(), name = "ln",      type = cardType.FUNCTION, operator = Operator.LN)
+        "log10" -> cardGame(id = UUID.randomUUID().toString(), name = "log10",   type = cardType.FUNCTION, operator = Operator.LOG10)
+        // Constants
+        "pi"    -> cardGame(id = UUID.randomUUID().toString(), name = "pi",      type = cardType.CONSTANT, operator = Operator.PI)
+        "euler" -> cardGame(id = UUID.randomUUID().toString(), name = "euler",   type = cardType.CONSTANT, operator = Operator.EULER)
+        // Special two-slot cards
+        "fraction" -> cardGame(id = UUID.randomUUID().toString(), name = "Fraction", type = cardType.FRACTION, operator = Operator.FRACTION)
+        "exponent" -> cardGame(id = UUID.randomUUID().toString(), name = "Exponent", type = cardType.EXPONENT, operator = Operator.POWER)
+        // Numbers (catch-all)
         else -> {
             val numberValue = cardString.toIntOrNull()
                 ?: throw IllegalArgumentException("Could not parse '$cardString'")
@@ -259,7 +287,7 @@ fun AppNavigation(
         composable(NavRoutes.MultiplayerView) {
             MultiplayerSelectScreen(
                 onNavigateToMenu = { navController.navigate(NavRoutes.Menu) },
-                onNavigateToOnline = { /* TODO */ },
+                onNavigateToOnline = { navController.navigate(NavRoutes.OnlineMultiplayer) },
                 onNavigateToLocal = { navController.navigate(NavRoutes.LocalMultiplayer) }
             )
         }
@@ -271,6 +299,48 @@ fun AppNavigation(
                 onReturnToMultiplayerMenu = {
                     navController.navigate(NavRoutes.MultiplayerView) {
                         popUpTo(NavRoutes.LocalMultiplayer) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Online multiplayer entry (Host / Join by Code / Public Lobbies)
+        composable(NavRoutes.OnlineMultiplayer) {
+            OnlineMultiplayerEntryScreen(
+                onNavigateToLobby = { lobbyId ->
+                    navController.navigate("${NavRoutes.OnlineLobby}/$lobbyId")
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Lobby waiting room
+        composable("${NavRoutes.OnlineLobby}/{lobbyId}") { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: return@composable
+            OnlineLobbyScreen(
+                lobbyIdArg = lobbyId,
+                onGameStart = { id ->
+                    navController.navigate("${NavRoutes.OnlineGame}/$id") {
+                        popUpTo("${NavRoutes.OnlineLobby}/$id") { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.navigate(NavRoutes.OnlineMultiplayer) {
+                        popUpTo("${NavRoutes.OnlineLobby}/$lobbyId") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Online game screen
+        composable("${NavRoutes.OnlineGame}/{lobbyId}") { backStackEntry ->
+            val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: return@composable
+            GameViewMultiOnline(
+                lobbyId = lobbyId,
+                playerDeck = currentDeck,
+                onReturnToMenu = {
+                    navController.navigate(NavRoutes.Menu) {
+                        popUpTo(NavRoutes.Menu) { inclusive = false }
                     }
                 }
             )

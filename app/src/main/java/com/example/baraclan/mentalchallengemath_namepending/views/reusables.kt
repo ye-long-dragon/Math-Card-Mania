@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.baraclan.mentalchallengemath_namepending.R
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.*
@@ -67,9 +68,7 @@ fun DeveloperFace(
                     .clip(CircleShape)
             )
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
@@ -87,8 +86,10 @@ public fun CardGameDisplay(
     onDragStart: (() -> Unit)? = null,
     onDragEnd: (() -> Unit)? = null
 ) {
+    // ── Map every card type to its drawable resource ──────────
     val imageResId: Int? = remember(card) {
         when (card.type) {
+
             cardType.NUMBER -> when (card.numberValue) {
                 0 -> R.drawable.zero
                 1 -> R.drawable.one
@@ -102,13 +103,32 @@ public fun CardGameDisplay(
                 9 -> R.drawable.nine
                 else -> null
             }
+
             cardType.OPERATOR -> when (card.operator) {
-                Operator.ADD -> R.drawable.addition
+                Operator.ADD      -> R.drawable.addition
                 Operator.SUBTRACT -> R.drawable.subtraction
                 Operator.MULTIPLY -> R.drawable.multiplication
-                Operator.DIVIDE -> R.drawable.division
-                null -> null
+                Operator.DIVIDE   -> R.drawable.division
+                else -> null
             }
+
+            cardType.FUNCTION -> when (card.operator) {
+                Operator.SIN   -> R.drawable.sin
+                Operator.COS   -> R.drawable.cos
+                Operator.LN    -> R.drawable.ln
+                Operator.LOG10 -> R.drawable.log10
+                else -> null
+            }
+
+            cardType.CONSTANT -> when (card.operator) {
+                Operator.PI    -> R.drawable.pi
+                Operator.EULER -> R.drawable.euler
+                else -> null
+            }
+
+            cardType.FRACTION -> R.drawable.fraction
+
+            cardType.EXPONENT -> R.drawable.exponent
         }
     }
 
@@ -118,12 +138,8 @@ public fun CardGameDisplay(
             if (onLongPress != null || onDragStart != null) {
                 Modifier.pointerInput(card.id) {
                     detectTapGestures(
-                        onTap = {
-                            onClick()
-                        },
-                        onLongPress = {
-                            onLongPress?.invoke()
-                        }
+                        onTap = { onClick() },
+                        onLongPress = { onLongPress?.invoke() }
                     )
                 }
             } else {
@@ -143,15 +159,19 @@ public fun CardGameDisplay(
             contentScale = ContentScale.Fit
         )
     } else {
+        // Fallback: show a text label for cards without a drawable yet
         Box(
             modifier = baseModifier
-                .background(MaterialTheme.colorScheme.errorContainer),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "ERR",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                text = card.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = BlackBoardYellow,
+                textAlign = TextAlign.Center,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(4.dp)
             )
         }
     }
@@ -164,7 +184,6 @@ public fun DeckHorizontalScroll(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -197,7 +216,6 @@ public fun collectionView(
     modifier: Modifier = Modifier
 ) {
     val cards = playerCollection.getAllCardsAsList()
-
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = modifier
@@ -206,15 +224,10 @@ public fun collectionView(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        items(
-            cards,
-            key = { card -> card.id }
-        ) { cardGameItem ->
+        items(cards, key = { card -> card.id }) { cardGameItem ->
             CardGameDisplay(
                 card = cardGameItem,
-                onClick = {
-                    onCardClick?.invoke(cardGameItem)
-                }
+                onClick = { onCardClick?.invoke(cardGameItem) }
             )
         }
     }
@@ -229,7 +242,6 @@ public fun HandDisplay(
     modifier: Modifier = Modifier
 ) {
     val cardsInHand = playerHand.getAllCardsAsList()
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -352,7 +364,6 @@ public fun EquationDisplay(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-
     Surface(
         modifier = modifier
             .fillMaxWidth()

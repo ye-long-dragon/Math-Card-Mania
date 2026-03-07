@@ -1,123 +1,226 @@
 package com.example.baraclan.mentalchallengemath_namepending.models
 
-
-
 import java.util.Stack
+import kotlin.math.*
 
-// Requires cardGame, CardType, Operator
+// ─────────────────────────────────────────────────────────────
+// PemdasEvaluator
+//
+// Supported card layout in expression:
+//
+//   NUMBER / CONSTANT          → bare value
+//   FUNCTION  NUMBER/CONSTANT  → sin(x), cos(x), ln(x), log10(x)
+//   FRACTION  NUMBER NUMBER    → x / y  (exact rational division)
+//   EXPONENT  NUMBER NUMBER    → x ^ y
+//   OPERATOR                   → +  −  ×  ÷  (infix, PEMDAS)
+//
+// Returns Double.
+// ─────────────────────────────────────────────────────────────
 object PemdasEvaluator {
 
-    // Treat leading +/- as unary sign operators and fold them into the following number.
-    // Example: [-, 5, +, 3] -> [ -5, +, 3 ]
-    private fun normalizeUnary(expressionCards: List<cardGame>): List<cardGame> {
-        if (expressionCards.isEmpty()) return expressionCards
-
-        val result = mutableListOf<cardGame>()
-        var i = 0
-        while (i < expressionCards.size) {
-            val card = expressionCards[i]
-            val isUnaryPlusOrMinus =
-                card.type == cardType.OPERATOR &&
-                        (card.operator == Operator.ADD || card.operator == Operator.SUBTRACT) &&
-                        (i == 0 || expressionCards[i - 1].type == cardType.OPERATOR)
-
-            if (isUnaryPlusOrMinus) {
-                require(i + 1 < expressionCards.size) {
-                    "Unary operator at end of expression."
-                }
-                val next = expressionCards[i + 1]
-                require(next.type == cardType.NUMBER) {
-                    "Unary operator must be followed by a number."
-                }
-
-                val baseValue = next.numberValue
-                    ?: throw IllegalArgumentException("Number card missing value.")
-                val signedValue = if (card.operator == Operator.SUBTRACT) -baseValue else baseValue
-
-                // Create a transient signed number card just for evaluation.
-                val signedCard = cardGame(
-                    id = next.id,
-                    name = "Number ($signedValue)",
-                    type = cardType.NUMBER,
-                    numberValue = signedValue,
-                    operator = null
-                )
-                result.add(signedCard)
-                i += 2
-            } else {
-                result.add(card)
-                i++
-            }
-        }
-
-        return result
+    // ── Token types used internally ───────────────────────────
+    private sealed class Token {
+        data class Value(val v: Double) : Token()
+        data class BinOp(val op: Operator) : Token()
     }
 
-    private fun getPrecedence(operator: Operator): Int {
-        return when (operator) {
-            Operator.ADD, Operator.SUBTRACT -> 1
-            Operator.MULTIPLY, Operator.DIVIDE -> 2
-        }
+    // ── Operator precedence ───────────────────────────────────
+    private fun precedence(op: Operator): Int = when (op) {
+        Operator.ADD, Operator.SUBTRACT -> 1
+        Operator.MULTIPLY, Operator.DIVIDE -> 2
+        else -> 0
     }
 
-    private fun applyOperator(operator: Operator, b: Int, a: Int): Int {
-        return when (operator) {
-            Operator.ADD -> a + b
-            Operator.SUBTRACT -> a - b
-            Operator.MULTIPLY -> a * b
-            Operator.DIVIDE -> {
-                require(b != 0) { "Division by zero." }
-                a / b
-            }
+    // ── Apply a binary operator to two doubles ────────────────
+    private fun applyBinary(op: Operator, a: Double, b: Double): Double = when (op) {
+        Operator.ADD -> a + b
+        Operator.SUBTRACT -> a - b
+        Operator.MULTIPLY -> a * b
+        Operator.DIVIDE -> {
+            require(b != 0.0) { "Division by zero." }
+            a / b
         }
+        else -> throw IllegalArgumentException("Not a binary operator: $op")
     }
 
-    fun evaluate(expressionCards: List<cardGame>): Int {
+    // ─────────────────────────────────────────────────────────
+    // Main entry point
+    // Returns Double result of the expression.
+    // Throws IllegalArgumentException for invalid expressions.
+    // ─────────────────────────────────────────────────────────
+    fun evaluate(expressionCards: List<cardGame>): Double {
         require(expressionCards.isNotEmpty()) { "Expression is empty." }
 
-        // First normalize any unary +/- into signed numbers.
-        val tokens = normalizeUnary(expressionCards)
+        // Step 1: Resolve all cards into a flat list of Token
+        val tokens = resolveToTokens(expressionCards)
 
-        // After normalization, expression must be NUMBER (op NUMBER)* and end with NUMBER.
-        require(tokens.first().type == cardType.NUMBER) { "Expression must start with a number." }
-        require(tokens.last().type == cardType.NUMBER) { "Expression cannot end with an operator." }
-        require(tokens.size % 2 != 0) { "Invalid expression length." }
+        // Step 2: Shunting-yard → postfix
+        val postfix = toPostfix(tokens)
 
-        val outputQueue: MutableList<cardGame> = mutableListOf()
-        val operatorStack: Stack<cardGame> = Stack()
+        // Step 3: Evaluate postfix
+        return evalPostfix(postfix)
+    }
 
-        for (card in tokens) {
-            when (card.type) {
-                cardType.NUMBER -> outputQueue.add(card)
-                cardType.OPERATOR -> {
-                    val currentOp = card.operator!!
-                    while (operatorStack.isNotEmpty() && operatorStack.peek().type == cardType.OPERATOR &&
-                        getPrecedence(operatorStack.peek().operator!!) >= getPrecedence(currentOp)) {
-                        outputQueue.add(operatorStack.pop())
+    // ── Step 1: Walk the card list and resolve values ─────────
+    // Handles: FUNCTION (prefix), FRACTION (two-slot), EXPONENT (two-slot),
+    //          CONSTANT, NUMBER, OPERATOR, unary +/−
+    private fun resolveToTokens(cards: List<cardGame>): List<Token> {
+        val tokens = mutableListOf<Token>()
+        var i = 0
+
+        while (i < cards.size) {
+            val card = cards[i]
+
+            when {
+                // ── Value cards (NUMBER, CONSTANT) ────────────
+                card.isValue() -> {
+                    val v = card.resolvedValue()
+                        ?: throw IllegalArgumentException("Card '${card.name}' has no value.")
+                    tokens.add(Token.Value(v))
+                    i++
+                }
+
+                // ── Prefix functions: sin/cos/ln/log10 ────────
+                // Layout: FUNCTION  VALUE_CARD
+                card.isPrefixFunction() -> {
+                    require(i + 1 < cards.size) {
+                        "${card.operator} must be followed by a value card."
                     }
-                    operatorStack.push(card)
+                    val next = cards[i + 1]
+                    require(next.isValue()) {
+                        "${card.operator} must be followed by a NUMBER or CONSTANT, got ${next.type}."
+                    }
+                    val arg = next.resolvedValue()!!
+                    val result = applyFunction(card.operator!!, arg)
+                    tokens.add(Token.Value(result))
+                    i += 2
                 }
+
+                // ── FRACTION card: x / y ──────────────────────
+                // Layout: FRACTION  NUMBER  NUMBER
+                card.type == cardType.FRACTION -> {
+                    require(i + 2 < cards.size) {
+                        "FRACTION card needs two number cards after it."
+                    }
+                    val numeratorCard = cards[i + 1]
+                    val denominatorCard = cards[i + 2]
+                    require(numeratorCard.isValue() && denominatorCard.isValue()) {
+                        "FRACTION card must be followed by two value cards."
+                    }
+                    val num = numeratorCard.resolvedValue()!!
+                    val den = denominatorCard.resolvedValue()!!
+                    require(den != 0.0) { "Fraction denominator cannot be zero." }
+                    tokens.add(Token.Value(num / den))
+                    i += 3
+                }
+
+                // ── EXPONENT card: x ^ y ──────────────────────
+                // Layout: EXPONENT  NUMBER  NUMBER
+                card.type == cardType.EXPONENT -> {
+                    require(i + 2 < cards.size) {
+                        "EXPONENT card needs two number cards after it."
+                    }
+                    val baseCard = cards[i + 1]
+                    val expCard = cards[i + 2]
+                    require(baseCard.isValue() && expCard.isValue()) {
+                        "EXPONENT card must be followed by two value cards."
+                    }
+                    val base = baseCard.resolvedValue()!!
+                    val exp = expCard.resolvedValue()!!
+                    tokens.add(Token.Value(base.pow(exp)))
+                    i += 3
+                }
+
+                // ── Binary operators (+, −, ×, ÷) ─────────────
+                card.isBinaryOperator() -> {
+                    val op = card.operator!!
+
+                    // Handle unary +/− at the start or after another operator
+                    val isUnary = (op == Operator.ADD || op == Operator.SUBTRACT) &&
+                            (tokens.isEmpty() || tokens.last() is Token.BinOp)
+
+                    if (isUnary) {
+                        require(i + 1 < cards.size) { "Unary operator at end of expression." }
+                        val next = cards[i + 1]
+                        require(next.isValue()) { "Unary operator must be followed by a value." }
+                        val v = next.resolvedValue()!!
+                        val signed = if (op == Operator.SUBTRACT) -v else v
+                        tokens.add(Token.Value(signed))
+                        i += 2
+                    } else {
+                        tokens.add(Token.BinOp(op))
+                        i++
+                    }
+                }
+
+                else -> throw IllegalArgumentException(
+                    "Unexpected card type '${card.type}' for card '${card.name}'."
+                )
             }
         }
 
-        while (operatorStack.isNotEmpty()) {
-            outputQueue.add(operatorStack.pop())
-        }
+        return tokens
+    }
 
-        val evaluationStack: Stack<Int> = Stack()
-        for (card in outputQueue) {
-            when (card.type) {
-                cardType.NUMBER -> evaluationStack.push(card.numberValue!!)
-                cardType.OPERATOR -> {
-                    require(evaluationStack.size >= 2) { "Invalid expression: not enough operands." }
-                    val operand2 = evaluationStack.pop()
-                    val operand1 = evaluationStack.pop()
-                    evaluationStack.push(applyOperator(card.operator!!, operand2, operand1))
+    // ── Step 2: Shunting-yard → postfix ──────────────────────
+    private fun toPostfix(tokens: List<Token>): List<Token> {
+        val output = mutableListOf<Token>()
+        val opStack = Stack<Token.BinOp>()
+
+        for (token in tokens) {
+            when (token) {
+                is Token.Value -> output.add(token)
+                is Token.BinOp -> {
+                    while (opStack.isNotEmpty() &&
+                        precedence(opStack.peek().op) >= precedence(token.op)
+                    ) {
+                        output.add(opStack.pop())
+                    }
+                    opStack.push(token)
                 }
             }
         }
+        while (opStack.isNotEmpty()) output.add(opStack.pop())
+        return output
+    }
 
-        require(evaluationStack.size == 1) { "Invalid expression: mismatch." }
-        return evaluationStack.pop()
+    // ── Step 3: Evaluate postfix ──────────────────────────────
+    private fun evalPostfix(tokens: List<Token>): Double {
+        val stack = Stack<Double>()
+        for (token in tokens) {
+            when (token) {
+                is Token.Value -> stack.push(token.v)
+                is Token.BinOp -> {
+                    require(stack.size >= 2) { "Invalid expression: not enough operands." }
+                    val b = stack.pop()
+                    val a = stack.pop()
+                    stack.push(applyBinary(token.op, a, b))
+                }
+            }
+        }
+        require(stack.size == 1) { "Invalid expression: leftover values." }
+        return stack.pop()
+    }
+
+    // ── Apply prefix function ─────────────────────────────────
+    private fun applyFunction(op: Operator, arg: Double): Double = when (op) {
+        Operator.SIN -> sin(Math.toRadians(arg))   // degrees input
+        Operator.COS -> cos(Math.toRadians(arg))   // degrees input
+        Operator.LN -> {
+            require(arg > 0) { "ln requires a positive argument." }
+            ln(arg)
+        }
+        Operator.LOG10 -> {
+            require(arg > 0) { "log10 requires a positive argument." }
+            log10(arg)
+        }
+        else -> throw IllegalArgumentException("Not a function operator: $op")
+    }
+
+    // ── Convenience: evaluate and round to N decimal places ───
+    fun evaluateRounded(expressionCards: List<cardGame>, decimals: Int = 4): Double {
+        val result = evaluate(expressionCards)
+        val factor = 10.0.pow(decimals)
+        return round(result * factor) / factor
     }
 }

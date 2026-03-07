@@ -1,111 +1,156 @@
 package com.example.baraclan.mentalchallengemath_namepending.scripts
 
-import com.example.baraclan.mentalchallengemath_namepending.models.cardContainer
-import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
-import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import kotlin.random.Random
 
+// ─────────────────────────────────────────────────────────────
+// transferCards
+// ─────────────────────────────────────────────────────────────
 fun transferCards(card: cardGame, count: Int, from: cardContainer, to: cardContainer) {
     require(count > 0) { "Count must be positive to transfer cards." }
     require(from.getCardCount(card) >= count) {
         "Cannot transfer $count x ${card.name} from ${from.name}. Only ${from.getCardCount(card)} available."
     }
-
-    println("Transferring $count x ${card.name} from ${from.name} to ${to.name}...")
     from.removeCard(card, count)
     to.addCard(card, count)
-    println("Transfer complete.")
 }
 
+// ─────────────────────────────────────────────────────────────
+// RandomHand — draws 8 cards from the deck
+// ─────────────────────────────────────────────────────────────
 fun RandomHand(Deck: deck): hand {
-    // A hand needs a name
-    val randomHand = hand("Player's Current Hand") // Instantiate the hand object
-
-    // The desired capacity for the hand
+    val randomHand = hand("Player's Current Hand")
     val handCapacity = 8
 
-    // Check if the deck is empty before attempting to draw
-    if (Deck.isEmpty()) {
-        println("Deck is empty. Could not draw all $handCapacity cards for the hand.")
-        return randomHand // Return the hand as is if deck runs out of cards
-    }
+    if (Deck.isEmpty()) return randomHand
 
-    // Create a flattened list of all available cards in the deck,
-    // repeating cards according to their count. This ensures weighted random selection.
     val allAvailableCardsInDeck = mutableListOf<cardGame>()
-    Deck.cards.forEach { (card, count) -> // Access Deck.cards directly
-        repeat(count) {
-            allAvailableCardsInDeck.add(card)
-        }
+    Deck.cards.forEach { (card, count) ->
+        repeat(count) { allAvailableCardsInDeck.add(card) }
     }
 
-    // Double-check if the flattened list is still not empty (e.g., all counts were 0 or negative)
-    if (allAvailableCardsInDeck.isEmpty()) {
-        println("No valid cards available in the deck to draw (after flattening).")
-        return randomHand // Return the hand as is if no valid cards can be drawn
-    }
+    if (allAvailableCardsInDeck.isEmpty()) return randomHand
 
-    // Loop to draw cards until the hand is full or the deck is empty
-    repeat(handCapacity) { // CHANGED: Using repeat for a fixed number of iterations
-
-
-        // --- Logic to select a random card from the deck's map and remove it ---
-
-        // Pick a random index from the weighted list
+    repeat(handCapacity) {
+        if (allAvailableCardsInDeck.isEmpty()) return@repeat
         val randomIndex = Random.nextInt(allAvailableCardsInDeck.size)
         val drawnCard = allAvailableCardsInDeck[randomIndex]
-
-        // Add the drawn card to the new hand
         randomHand.addCard(drawnCard, 1)
+        allAvailableCardsInDeck.removeAt(randomIndex)
 
-        // Remove one instance of the drawn card from the original Deck's map
-        // (This modifies the Deck's state)
         val currentCountInDeck = Deck.cards[drawnCard] ?: 0
-        if (currentCountInDeck > 1) {
-            Deck.cards[drawnCard] = currentCountInDeck - 1
-        } else {
-            // If count is 1, remove the card entry entirely from the map
-            Deck.cards.remove(drawnCard)
-        }
-        // --- End of draw and remove logic ---
-
-        println("Drawn card ${drawnCard.name} for hand. Hand size: ${randomHand.getTotalCount()}")
+        if (currentCountInDeck > 1) Deck.cards[drawnCard] = currentCountInDeck - 1
+        else Deck.cards.remove(drawnCard)
     }
 
     return randomHand
 }
 
-// Placeholder for equation evaluation logic (kept for backward compatibility)
-fun evaluateEquation(equation: List<cardGame>): Double {
-    if (equation.isEmpty()) return 0.0
-    try {
-        return PemdasEvaluator.evaluate(equation).toDouble()
+// ─────────────────────────────────────────────────────────────
+// evaluateEquation — returns Double (was Int)
+// Safe wrapper around PemdasEvaluator; returns null on failure
+// ─────────────────────────────────────────────────────────────
+fun evaluateEquation(equation: List<cardGame>): Double? {
+    if (equation.isEmpty()) return null
+    return try {
+        PemdasEvaluator.evaluate(equation)
     } catch (e: Exception) {
-        return 0.0
+        null
     }
 }
 
-// PEMDAS evaluation function using the PemdasEvaluator
-fun evaluateEquationWithPemdas(equation: List<cardGame>): Int {
-    require(equation.isNotEmpty()) { "Equation cannot be empty." }
-    return PemdasEvaluator.evaluate(equation)
+// ─────────────────────────────────────────────────────────────
+// evaluateEquationRounded — rounds to 4 decimal places
+// ─────────────────────────────────────────────────────────────
+fun evaluateEquationRounded(equation: List<cardGame>): Double? {
+    if (equation.isEmpty()) return null
+    return try {
+        PemdasEvaluator.evaluateRounded(equation)
+    } catch (e: Exception) {
+        null
+    }
 }
 
-// Get equation as a display string
+// ─────────────────────────────────────────────────────────────
+// getEquationString — human-readable equation display
+// Handles all card types including FUNCTION, CONSTANT,
+// FRACTION, EXPONENT
+// ─────────────────────────────────────────────────────────────
 fun getEquationString(equation: List<cardGame>): String {
-    return equation.joinToString(" ") {
-        when (it.type) {
-            cardType.NUMBER -> it.numberValue.toString()
-            cardType.OPERATOR -> when (it.operator) {
-                Operator.ADD -> "+"
-                Operator.SUBTRACT -> "-"
-                Operator.MULTIPLY -> "×"
-                Operator.DIVIDE -> "÷"
-                null -> "?"
+    val sb = StringBuilder()
+    var i = 0
+    while (i < equation.size) {
+        val card = equation[i]
+        when (card.type) {
+            cardType.NUMBER -> sb.append(card.numberValue)
+
+            cardType.OPERATOR -> sb.append(
+                when (card.operator) {
+                    Operator.ADD -> " + "
+                    Operator.SUBTRACT -> " − "
+                    Operator.MULTIPLY -> " × "
+                    Operator.DIVIDE -> " ÷ "
+                    else -> " ? "
+                }
+            )
+
+            cardType.CONSTANT -> sb.append(
+                when (card.operator) {
+                    Operator.PI -> "π"
+                    Operator.EULER -> "e"
+                    else -> "?"
+                }
+            )
+
+            cardType.FUNCTION -> {
+                val fnName = when (card.operator) {
+                    Operator.SIN -> "sin"
+                    Operator.COS -> "cos"
+                    Operator.LN -> "ln"
+                    Operator.LOG10 -> "log₁₀"
+                    else -> "?"
+                }
+                // Peek at next card to show sin(x) style
+                val nextCard = equation.getOrNull(i + 1)
+                if (nextCard != null && nextCard.isValue()) {
+                    sb.append("$fnName(${nextCard.resolvedValue()?.let { formatDouble(it) } ?: "?"})")
+                    i += 2
+                    continue
+                } else {
+                    sb.append("$fnName(?)")
+                }
+            }
+
+            cardType.FRACTION -> {
+                val num = equation.getOrNull(i + 1)
+                val den = equation.getOrNull(i + 2)
+                val numStr = num?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                val denStr = den?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                sb.append("($numStr/$denStr)")
+                if (num != null && den != null) { i += 3; continue }
+            }
+
+            cardType.EXPONENT -> {
+                val base = equation.getOrNull(i + 1)
+                val exp = equation.getOrNull(i + 2)
+                val baseStr = base?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                val expStr = exp?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                sb.append("$baseStr^$expStr")
+                if (base != null && exp != null) { i += 3; continue }
             }
         }
+        i++
     }
+    return sb.toString()
 }
 
-
+// ─────────────────────────────────────────────────────────────
+// formatDouble — show as Int if whole number, else 4dp
+// ─────────────────────────────────────────────────────────────
+fun formatDouble(v: Double): String {
+    return if (v == kotlin.math.floor(v) && !v.isInfinite()) {
+        v.toLong().toString()
+    } else {
+        "%.4f".format(v).trimEnd('0').trimEnd('.')
+    }
+}

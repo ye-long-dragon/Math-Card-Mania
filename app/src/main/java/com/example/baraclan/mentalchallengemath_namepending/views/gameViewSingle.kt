@@ -89,7 +89,7 @@ public fun GameView(
     }
     
     // Helper function to safely evaluate equation
-    fun safeEvaluateEquation(cards: List<cardGame>): Int? {
+    fun safeEvaluateEquation(cards: List<cardGame>): Double? {
         return if (cards.isEmpty()) {
             null
         } else {
@@ -273,7 +273,7 @@ public fun GameView(
                 Spacer(modifier = Modifier.height(8.dp))
                 equationResult.value?.let { result ->
                     Text(
-                        text = "= $result",
+                        text = "= ${com.example.baraclan.mentalchallengemath_namepending.scripts.formatDouble(result)}",
                         style = MaterialTheme.typography.titleLarge,
                         color = BlackBoardYellow,
                         fontFamily = Pixel
@@ -315,8 +315,7 @@ public fun GameView(
             Button(onClick = {
                 try {
                     // Use PEMDAS evaluator for actual equation evaluation
-                    val equationResult: Int = PemdasEvaluator.evaluate(equationCards)
-                    val equationResultDouble = equationResult.toDouble()
+                    val equationResultDouble = PemdasEvaluator.evaluate(equationCards)
                     println("Submitted: ${equationCards.joinToString(" ")} = $equationResultDouble")
 
                     // Move submitted cards to card bin
