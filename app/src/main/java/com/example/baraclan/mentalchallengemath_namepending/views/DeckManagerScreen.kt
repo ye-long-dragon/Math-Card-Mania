@@ -23,13 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
-import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
-import com.example.baraclan.mentalchallengemath_namepending.models.collection
-import com.example.baraclan.mentalchallengemath_namepending.models.deck
+import com.example.baraclan.mentalchallengemath_namepending.models.*
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 const val MAX_DECKS = 8
+
+
 
 // ─────────────────────────────────────────────────────────────
 // DeckManagerScreen
@@ -70,7 +71,9 @@ fun DeckManagerScreen(
                 onCollectionCardClick = { cardToAdd ->
                     scope.launch {
                         val updated = deck(deckToEdit.name, deckToEdit.getAllCardsWithCounts())
-                        updated.addCard(cardToAdd, 1)
+                        // Always create a fresh card with a new UUID so deck IDs stay unique
+                        val freshCard = cloneCardWithNewId(cardToAdd)
+                        updated.addCard(freshCard, 1)
                         DeckRepository.saveDeck(context, updated)
                     }
                 }
@@ -114,7 +117,7 @@ fun DeckManagerScreen(
                 title = {
                     Text(
                         "My Decks",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow
                     )
                 },
@@ -139,7 +142,7 @@ fun DeckManagerScreen(
                             inSelectionMode = false
                             selectedForDelete = emptySet()
                         }) {
-                            Text("Cancel", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                            Text("Cancel", fontFamily =Pixel, color = BlackBoardYellow)
                         }
                     }
                 }
@@ -159,7 +162,7 @@ fun DeckManagerScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text("Return to Menu", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                Text("Return to Menu", fontFamily = Pixel, color = BlackBoardYellow)
             }
         }
     ) { paddingValues ->
@@ -173,7 +176,7 @@ fun DeckManagerScreen(
             Text(
                 text = "${savedDecks.size} / $MAX_DECKS decks" +
                         if (savedDecks.size >= MAX_DECKS) " (limit reached)" else "",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = if (savedDecks.size >= MAX_DECKS)
                     MaterialTheme.colorScheme.error
                 else
@@ -188,7 +191,7 @@ fun DeckManagerScreen(
             if (inSelectionMode) {
                 Text(
                     text = "Long-press to select • Tap 🗑 to delete selected",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = BlackBoardYellow.copy(alpha = 0.6f),
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -208,14 +211,14 @@ fun DeckManagerScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "No decks yet!",
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = Pixel,
                             color = BlackBoardYellow,
                             fontSize = 20.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Tap + to create your first deck",
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = Pixel,
                             color = BlackBoardYellow.copy(alpha = 0.6f),
                             fontSize = 13.sp
                         )
@@ -257,6 +260,11 @@ fun DeckManagerScreen(
 }
 
 // ─────────────────────────────────────────────────────────────
+// Clones a card with a fresh UUID so each copy in a deck is unique
+// ─────────────────────────────────────────────────────────────
+fun cloneCardWithNewId(card: cardGame): cardGame = card.copy(id = UUID.randomUUID().toString())
+
+// ─────────────────────────────────────────────────────────────
 // DeckManagerTile
 // ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalFoundationApi::class)
@@ -296,13 +304,13 @@ fun DeckManagerTile(
                 Column {
                     Text(
                         text = deckName,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         fontSize = 16.sp,
                         color = Color.Black
                     )
                     Text(
                         text = "$cardCount / 20 cards",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         fontSize = 12.sp,
                         color = if (cardCount > 20) MaterialTheme.colorScheme.error else Color.DarkGray
                     )
@@ -310,7 +318,7 @@ fun DeckManagerTile(
                 if (!inSelectionMode) {
                     Text(
                         text = "Tap to edit →",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         fontSize = 11.sp,
                         color = Color.DarkGray
                     )
@@ -368,7 +376,7 @@ fun AddDeckDialog(
             ) {
                 Text(
                     text = "Add Deck",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     fontSize = 20.sp,
                     color = BlackBoardYellow,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -385,7 +393,7 @@ fun AddDeckDialog(
                                 nameError = null
                             },
                             text = {
-                                Text(title, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                                Text(title, fontFamily = Pixel, fontSize = 12.sp)
                             }
                         )
                     }
@@ -399,7 +407,7 @@ fun AddDeckDialog(
                         OutlinedTextField(
                             value = deckName,
                             onValueChange = { deckName = it; nameError = null },
-                            label = { Text("Deck name", fontFamily = FontFamily.Monospace) },
+                            label = { Text("Deck name", fontFamily = Pixel) },
                             isError = nameError != null,
                             supportingText = nameError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                             singleLine = true,
@@ -410,7 +418,7 @@ fun AddDeckDialog(
                             onClick = { if (validateName(deckName)) onCreateNew(deckName.trim()) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Create Empty Deck", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                            Text("Create Empty Deck", fontFamily = Pixel, color = BlackBoardYellow)
                         }
                     }
 
@@ -419,14 +427,14 @@ fun AddDeckDialog(
                         if (existingDecks.isEmpty()) {
                             Text(
                                 "No decks to duplicate yet.",
-                                fontFamily = FontFamily.Monospace,
+                                fontFamily = Pixel,
                                 color = MaterialTheme.colorScheme.error,
                                 fontSize = 13.sp
                             )
                         } else {
                             Text(
                                 "Choose a deck to copy:",
-                                fontFamily = FontFamily.Monospace,
+                                fontFamily = Pixel,
                                 fontSize = 13.sp,
                                 color = BlackBoardYellow,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -448,7 +456,7 @@ fun AddDeckDialog(
                                 ) {
                                     Text(
                                         "${d.name} (${d.getTotalCount()} cards)",
-                                        fontFamily = FontFamily.Monospace,
+                                        fontFamily = Pixel,
                                         fontSize = 12.sp,
                                         color = if (selectedSource?.name == d.name)
                                             MaterialTheme.colorScheme.primary
@@ -462,7 +470,7 @@ fun AddDeckDialog(
                                 OutlinedTextField(
                                     value = deckName,
                                     onValueChange = { deckName = it; nameError = null },
-                                    label = { Text("New deck name", fontFamily = FontFamily.Monospace) },
+                                    label = { Text("New deck name", fontFamily = Pixel) },
                                     isError = nameError != null,
                                     supportingText = nameError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                                     singleLine = true,
@@ -476,7 +484,7 @@ fun AddDeckDialog(
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Duplicate", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                                    Text("Duplicate", fontFamily = Pixel, color = BlackBoardYellow)
                                 }
                             }
                         }
@@ -486,7 +494,7 @@ fun AddDeckDialog(
                     2 -> {
                         Text(
                             text = "Creates a new deck pre-filled with the default starting cards (${defaultDeck.getTotalCount()} cards).",
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = Pixel,
                             fontSize = 13.sp,
                             color = BlackBoardYellow,
                             textAlign = TextAlign.Center,
@@ -495,7 +503,7 @@ fun AddDeckDialog(
                         OutlinedTextField(
                             value = deckName,
                             onValueChange = { deckName = it; nameError = null },
-                            label = { Text("Deck name", fontFamily = FontFamily.Monospace) },
+                            label = { Text("Deck name", fontFamily = Pixel) },
                             isError = nameError != null,
                             supportingText = nameError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                             singleLine = true,
@@ -506,14 +514,14 @@ fun AddDeckDialog(
                             onClick = { if (validateName(deckName)) onResetDefault(deckName.trim()) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Create from Default", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                            Text("Create from Default", fontFamily = Pixel, color = BlackBoardYellow)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
                 TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Cancel", fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.error)
+                    Text("Cancel", fontFamily = Pixel, color = MaterialTheme.colorScheme.error)
                 }
             }
         }

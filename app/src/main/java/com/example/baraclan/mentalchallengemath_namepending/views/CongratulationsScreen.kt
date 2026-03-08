@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 
+
+
 @Composable
 fun CongratulationsScreen(
     finalScore: Int,

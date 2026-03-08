@@ -21,6 +21,8 @@ import com.example.baraclan.mentalchallengemath_namepending.ui.theme.gameTheme
 import com.example.baraclan.mentalchallengemath_namepending.views.*
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import java.util.UUID
+import com.example.baraclan.mentalchallengemath_namepending.models.MusicManager
+import com.example.baraclan.mentalchallengemath_namepending.models.SoundManager
 
 // ─────────────────────────────────────────────────────────────
 // Nav routes
@@ -60,8 +62,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        MusicManager.resume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        MusicManager.pause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        MusicManager.stop()
+        SoundManager.release()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MusicManager.start(this)
+        SoundManager.init(this)
         setContent {
             gameTheme {
                 Box(modifier = Modifier.fillMaxSize()) {

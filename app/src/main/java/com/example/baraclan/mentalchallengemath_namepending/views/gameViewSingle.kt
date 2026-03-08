@@ -193,6 +193,7 @@ public fun GameView(
             // Normal click: move to equation
             moveCardToEquation(clickedCard)
         }
+        SoundManager.playPlace()
     }
     
     // Long press handler for hand cards
@@ -214,6 +215,7 @@ public fun GameView(
             // Normal click: move to hand
             moveCardToHand(clickedCard)
         }
+        SoundManager.playSlide()
     }
     
     // Long press handler for equation cards

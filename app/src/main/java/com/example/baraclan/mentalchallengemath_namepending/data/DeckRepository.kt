@@ -89,7 +89,8 @@ object DeckRepository {
         }
     }
 
-    // Rebuilds a cardGame from its stored name e.g. "Number (5)" or "Operator (+)"
+    // Rebuilds a cardGame from its stored name.
+    // Handles all card types: Number, Operator, Function, Constant, Fraction, Exponent.
     private fun reconstructCard(cardName: String): cardGame? {
         return try {
             when {
@@ -100,7 +101,7 @@ object DeckRepository {
                         .trim()
                         .toInt()
                     cardGame(
-                        id = cardName, // use name as stable ID for saved cards
+                        id = cardName,
                         name = cardName,
                         type = cardType.NUMBER,
                         numberValue = numberValue
@@ -125,6 +126,17 @@ object DeckRepository {
                         operator = operator
                     )
                 }
+                // Functions
+                cardName == "sin"   -> cardGame(id = cardName, name = cardName, type = cardType.FUNCTION, operator = Operator.SIN)
+                cardName == "cos"   -> cardGame(id = cardName, name = cardName, type = cardType.FUNCTION, operator = Operator.COS)
+                cardName == "ln"    -> cardGame(id = cardName, name = cardName, type = cardType.FUNCTION, operator = Operator.LN)
+                cardName == "log10" -> cardGame(id = cardName, name = cardName, type = cardType.FUNCTION, operator = Operator.LOG10)
+                // Constants
+                cardName == "pi"    -> cardGame(id = cardName, name = cardName, type = cardType.CONSTANT, operator = Operator.PI)
+                cardName == "euler" -> cardGame(id = cardName, name = cardName, type = cardType.CONSTANT, operator = Operator.EULER)
+                // Special two-slot cards
+                cardName == "Fraction" -> cardGame(id = cardName, name = cardName, type = cardType.FRACTION, operator = Operator.FRACTION)
+                cardName == "Exponent" -> cardGame(id = cardName, name = cardName, type = cardType.EXPONENT, operator = Operator.POWER)
                 else -> null
             }
         } catch (e: Exception) {

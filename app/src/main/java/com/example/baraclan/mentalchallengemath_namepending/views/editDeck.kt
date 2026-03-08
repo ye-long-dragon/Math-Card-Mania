@@ -41,7 +41,7 @@ fun EditDeckScreen(
                 .fillMaxWidth()
                 .padding(top = 16.dp, bottom = 4.dp),
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 28.sp,
                 color = BlackBoardYellow
@@ -56,7 +56,7 @@ fun EditDeckScreen(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
             style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
                 color = if (isOverLimit) MaterialTheme.colorScheme.error else BlackBoardYellow
@@ -81,7 +81,7 @@ fun EditDeckScreen(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
             style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
                 color = BlackBoardYellow
@@ -103,7 +103,7 @@ fun EditDeckScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 12.sp,
                 color = BlackBoardYellow.copy(alpha = 0.7f)
@@ -117,7 +117,7 @@ fun EditDeckScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 color = if (it.startsWith("✓")) BlackBoardYellow else MaterialTheme.colorScheme.error
@@ -152,7 +152,7 @@ fun EditDeckScreen(
             ) {
                 Text(
                     "Save Deck",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = BlackBoardYellow
                 )
             }
@@ -164,7 +164,7 @@ fun EditDeckScreen(
             ) {
                 Text(
                     "Return to Menu",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = BlackBoardYellow
                 )
             }

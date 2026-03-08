@@ -176,6 +176,7 @@ fun GameViewMultiOnline(
         if (draggedCard != null && dragSource == "hand") {
             moveCardToEquation(draggedCard!!); draggedCard = null; dragSource = null
         } else moveCardToEquation(clickedCard)
+        SoundManager.playPlace()
     }
     val onHandCardLongPress: (cardGame) -> Unit = { card ->
         if (playerHandState.contains(card)) { draggedCard = card; dragSource = "hand" }
@@ -184,6 +185,7 @@ fun GameViewMultiOnline(
         if (draggedCard != null && dragSource == "equation") {
             moveCardToHand(draggedCard!!); draggedCard = null; dragSource = null
         } else moveCardToHand(clickedCard)
+        SoundManager.playSlide()
     }
     val onEquationCardLongPress: (cardGame) -> Unit = { card ->
         if (equationCards.contains(card)) { draggedCard = card; dragSource = "equation" }

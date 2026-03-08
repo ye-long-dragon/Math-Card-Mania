@@ -1,6 +1,10 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import android.util.Patterns
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.baraclan.mentalchallengemath_namepending.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -31,6 +35,7 @@ import kotlinx.coroutines.tasks.await
 // Shared helpers
 // ─────────────────────────────────────────────────────────────
 
+// Declare once — used by all three screens
 
 
 // Reusable no-ripple click modifier
@@ -136,6 +141,15 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Math Card Mania Logo",
+                modifier = Modifier.size(100.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "Math Card Mania",
                 style = MaterialTheme.typography.headlineMedium,

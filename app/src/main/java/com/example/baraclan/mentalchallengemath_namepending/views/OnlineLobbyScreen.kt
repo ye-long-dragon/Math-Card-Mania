@@ -64,7 +64,7 @@ fun OnlineLobbyScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = BlackBoardYellow)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Creating lobby...", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                Text("Creating lobby...", fontFamily = Pixel, color = BlackBoardYellow)
             }
         }
         return
@@ -73,10 +73,10 @@ fun OnlineLobbyScreen(
     if (errorMessage != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
+                Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, fontFamily = Pixel, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onNavigateBack) {
-                    Text("Go Back", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                    Text("Go Back", fontFamily = Pixel, color = BlackBoardYellow)
                 }
             }
         }
@@ -112,7 +112,7 @@ fun OnlineLobbyScreen(
             Text(
                 text = if (isHost) "Your Lobby" else "Waiting for Host",
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = BlackBoardYellow,
                     textAlign = TextAlign.Center
                 ),
@@ -145,7 +145,7 @@ fun OnlineLobbyScreen(
             // ── Player list ───────────────────────────────────
             Text(
                 text = "Players (${players.size}/${currentLobby.settings.maxPlayers})",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 6.dp)
@@ -170,7 +170,7 @@ fun OnlineLobbyScreen(
                     Text(
                         text = if (players.size < 2) "Waiting for players to join..."
                         else "Waiting for all players to ready up...",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow.copy(alpha = 0.6f),
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
@@ -187,7 +187,7 @@ fun OnlineLobbyScreen(
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     enabled = canStart
                 ) {
-                    Text("START GAME", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 18.sp)
+                    Text("START GAME", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 18.sp)
                 }
             } else {
                 val myPlayer = players.firstOrNull { it.uid == currentUid }
@@ -206,7 +206,7 @@ fun OnlineLobbyScreen(
                 ) {
                     Text(
                         if (isReady) "✓ Ready! (tap to unready)" else "Ready Up",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow,
                         fontSize = 16.sp
                     )
@@ -224,17 +224,17 @@ fun OnlineLobbyScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Leave Lobby", fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.error)
+                Text("Leave Lobby", fontFamily = Pixel, color = MaterialTheme.colorScheme.error)
             }
         }
     } ?: run {
         // Lobby was deleted (host left)
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Lobby closed.", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                Text("Lobby closed.", fontFamily = Pixel, color = BlackBoardYellow)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onNavigateBack) {
-                    Text("Go Back", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+                    Text("Go Back", fontFamily = Pixel, color = BlackBoardYellow)
                 }
             }
         }
@@ -256,20 +256,20 @@ fun JoinCodeDisplay(code: String) {
     ) {
         Text(
             text = "Join Code",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow.copy(alpha = 0.7f),
             fontSize = 12.sp
         )
         Text(
             text = code,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 36.sp,
             letterSpacing = 8.sp
         )
         Text(
             text = "Share this with friends",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow.copy(alpha = 0.5f),
             fontSize = 11.sp
         )
@@ -295,7 +295,7 @@ fun LobbySettingsPanel(
     ) {
         Text(
             "Game Settings",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -303,7 +303,7 @@ fun LobbySettingsPanel(
 
         // Public / Private toggle
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Public lobby", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Text("Public lobby", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp, modifier = Modifier.weight(1f))
             Switch(
                 checked = localSettings.isPublic,
                 onCheckedChange = {
@@ -316,7 +316,7 @@ fun LobbySettingsPanel(
         Spacer(modifier = Modifier.height(6.dp))
 
         // Max players slider
-        Text("Max players: ${localSettings.maxPlayers}", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
+        Text("Max players: ${localSettings.maxPlayers}", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
         Slider(
             value = localSettings.maxPlayers.toFloat(),
             onValueChange = {
@@ -331,7 +331,7 @@ fun LobbySettingsPanel(
         Spacer(modifier = Modifier.height(6.dp))
 
         // Game mode
-        Text("Game mode", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
+        Text("Game mode", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -344,7 +344,7 @@ fun LobbySettingsPanel(
                             localSettings = localSettings.copy(gameMode = mode)
                             onSettingsChanged(localSettings)
                         },
-                        label = { Text(label, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }
+                        label = { Text(label, fontFamily = Pixel, fontSize = 11.sp) }
                     )
                 }
         }
@@ -352,7 +352,7 @@ fun LobbySettingsPanel(
         // Round timer (only for TIMED_ROUND)
         if (localSettings.gameMode == GameMode.TIMED_ROUND) {
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Round time: ${localSettings.roundTimerSeconds}s", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
+            Text("Round time: ${localSettings.roundTimerSeconds}s", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
             Slider(
                 value = localSettings.roundTimerSeconds.toFloat(),
                 onValueChange = { localSettings = localSettings.copy(roundTimerSeconds = it.toInt()) },
@@ -379,9 +379,9 @@ fun LobbySettingsDisplay(settings: LobbySettings) {
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        Text(visText, fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
-        Text(modeText, fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
-        Text("Max: ${settings.maxPlayers}", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 13.sp)
+        Text(visText, fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
+        Text(modeText, fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
+        Text("Max: ${settings.maxPlayers}", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 13.sp)
     }
 }
 
@@ -410,17 +410,17 @@ fun PlayerLobbyRow(player: LobbyPlayer, isCurrentUser: Boolean) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = player.username + if (isCurrentUser) " (you)" else "",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
         if (player.isHost) {
-            Text("HOST", fontFamily = FontFamily.Monospace, color = BlackBoardYellow.copy(alpha = 0.7f), fontSize = 11.sp)
+            Text("HOST", fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f), fontSize = 11.sp)
         } else if (player.isReady) {
             Icon(Icons.Default.CheckCircle, contentDescription = "Ready", tint = Color.Green, modifier = Modifier.size(20.dp))
         } else {
-            Text("not ready", fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.error, fontSize = 11.sp)
+            Text("not ready", fontFamily = Pixel, color = MaterialTheme.colorScheme.error, fontSize = 11.sp)
         }
     }
 }

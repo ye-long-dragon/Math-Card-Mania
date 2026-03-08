@@ -68,7 +68,7 @@ fun EntryMenuScreen(
         Text(
             text = "Online Multiplayer",
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             ),
@@ -86,7 +86,7 @@ fun EntryMenuScreen(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Back", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+            Text("Back", fontFamily = Pixel, color = BlackBoardYellow)
         }
     }
 }
@@ -99,7 +99,7 @@ private fun OnlineMenuButton(label: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .height(56.dp)
     ) {
-        Text(label, fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 16.sp)
+        Text(label, fontFamily = Pixel, color = BlackBoardYellow, fontSize = 16.sp)
     }
 }
 
@@ -126,7 +126,7 @@ fun JoinByCodeScreen(
         Text(
             text = "Enter Join Code",
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             ),
@@ -136,12 +136,12 @@ fun JoinByCodeScreen(
         OutlinedTextField(
             value = code,
             onValueChange = { code = it.uppercase().take(6) },
-            label = { Text("6-character code", fontFamily = FontFamily.Monospace) },
+            label = { Text("6-character code", fontFamily = Pixel) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
             modifier = Modifier.fillMaxWidth(),
             textStyle = LocalTextStyle.current.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 fontSize = 28.sp,
                 textAlign = TextAlign.Center,
                 letterSpacing = 8.sp
@@ -152,7 +152,7 @@ fun JoinByCodeScreen(
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -188,14 +188,14 @@ fun JoinByCodeScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Join Game", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 16.sp)
+                Text("Join Game", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 16.sp)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("Back", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+            Text("Back", fontFamily = Pixel, color = BlackBoardYellow)
         }
     }
 }
@@ -222,7 +222,7 @@ fun PublicLobbiesScreen(
         Text(
             text = "Public Lobbies",
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow
             ),
             modifier = Modifier
@@ -235,7 +235,7 @@ fun PublicLobbiesScreen(
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -251,14 +251,14 @@ fun PublicLobbiesScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         "No public lobbies right now.",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow,
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Why not host one?",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow.copy(alpha = 0.6f),
                         fontSize = 13.sp
                     )
@@ -293,7 +293,7 @@ fun PublicLobbiesScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("Back", fontFamily = FontFamily.Monospace, color = BlackBoardYellow)
+            Text("Back", fontFamily = Pixel, color = BlackBoardYellow)
         }
     }
 }
@@ -306,11 +306,11 @@ private fun PublicLobbyHeader() {
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Host", fontFamily = FontFamily.Monospace, color = BlackBoardYellow.copy(alpha = 0.7f),
+        Text("Host", fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f),
             fontSize = 12.sp, modifier = Modifier.weight(2f))
-        Text("Players", fontFamily = FontFamily.Monospace, color = BlackBoardYellow.copy(alpha = 0.7f),
+        Text("Players", fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f),
             fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-        Text("Mode", fontFamily = FontFamily.Monospace, color = BlackBoardYellow.copy(alpha = 0.7f),
+        Text("Mode", fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f),
             fontSize = 12.sp, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.weight(1.5f))
     }
@@ -335,14 +335,14 @@ private fun PublicLobbyRow(
     ) {
         Text(
             text = host?.username ?: "Unknown",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 13.sp,
             modifier = Modifier.weight(2f)
         )
         Text(
             text = "$playerCount/${lobby.settings.maxPlayers}",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = if (isFull) MaterialTheme.colorScheme.error else BlackBoardYellow,
             fontSize = 13.sp,
             modifier = Modifier.weight(1f),
@@ -350,7 +350,7 @@ private fun PublicLobbyRow(
         )
         Text(
             text = modeLabel,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 12.sp,
             modifier = Modifier.weight(1.5f),
@@ -365,7 +365,7 @@ private fun PublicLobbyRow(
             if (isJoining) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = BlackBoardYellow)
             } else {
-                Text(if (isFull) "Full" else "Join", fontFamily = FontFamily.Monospace,
+                Text(if (isFull) "Full" else "Join", fontFamily = Pixel,
                     color = BlackBoardYellow, fontSize = 12.sp)
             }
         }

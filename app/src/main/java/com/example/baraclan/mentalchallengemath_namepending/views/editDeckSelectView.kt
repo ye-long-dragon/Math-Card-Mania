@@ -42,7 +42,7 @@ fun DeckSelectScreen(
                 title = {
                     Text(
                         "Choose your Deck",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow
                     )
                 },
@@ -84,14 +84,14 @@ fun DeckSelectScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "No saved decks yet.",
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = Pixel,
                             color = BlackBoardYellow,
                             fontSize = 18.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Build a deck from the Edit Deck screen first!",
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = Pixel,
                             color = BlackBoardYellow.copy(alpha = 0.7f),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -102,7 +102,7 @@ fun DeckSelectScreen(
                 if (inSelectionMode) {
                     Text(
                         text = "Long-press to select • Tap trash to delete",
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -181,7 +181,7 @@ fun DeckTile(
                 Text(
                     text = deck.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = if (isSelected)
                         MaterialTheme.colorScheme.onPrimaryContainer
                     else
@@ -190,7 +190,7 @@ fun DeckTile(
                 )
                 Text(
                     text = "${deck.getTotalCount()} cards",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     fontSize = 12.sp,
                     color = if (isSelected)
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)

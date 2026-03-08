@@ -105,7 +105,7 @@ fun PlayerDeckSelection(
         Text(
             text = "$player, choose your deck",
             style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             )
@@ -116,7 +116,7 @@ fun PlayerDeckSelection(
         if (availableDecks.isEmpty()) {
             Text(
                 text = "No decks saved yet.\nCreate a deck first!",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
                 fontSize = 14.sp
@@ -138,7 +138,7 @@ fun PlayerDeckSelection(
                 ) {
                     Text(
                         text = if (isSelected) "✓ ${deck.name}" else deck.name,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = if (isSelected) BlackBoardYellow else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -149,7 +149,7 @@ fun PlayerDeckSelection(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Selected: ${selectedDeck.name}",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 fontSize = 13.sp
             )
@@ -177,7 +177,7 @@ fun BothPlayersReadyScreen(
         Text(
             text = "Both players ready?",
             style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             )
@@ -187,13 +187,13 @@ fun BothPlayersReadyScreen(
 
         Text(
             text = "Player 1: $p1DeckName",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 16.sp
         )
         Text(
             text = "Player 2: $p2DeckName",
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow,
             fontSize = 16.sp,
             modifier = Modifier.padding(top = 4.dp)
@@ -209,7 +209,7 @@ fun BothPlayersReadyScreen(
         ) {
             Text(
                 "START GAME",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 fontSize = 18.sp
             )
@@ -223,7 +223,7 @@ fun BothPlayersReadyScreen(
         ) {
             Text(
                 "Re-select Decks",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow
             )
         }

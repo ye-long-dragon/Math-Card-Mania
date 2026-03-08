@@ -164,26 +164,43 @@ object UserStatsManager {
         currentStats?.let { update(it) }
     }
 
-    // Update username in memory + Firebase Auth displayName + Firestore
+    // Update username — replaces the whole object so UI state updates correctly
     suspend fun updateUsername(newUsername: String): Result<Unit> {
         return try {
-            currentStats?.username = newUsername
-            // Update Firebase Auth display name
+            currentStats = currentStats?.copy(username = newUsername)
             val profileUpdates = userProfileChangeRequest { displayName = newUsername }
             auth.currentUser?.updateProfile(profileUpdates)?.await()
-            // Update Firestore
-            uid?.let { db.collection("users").document(it).update("username", newUsername).await() }
+            // set+merge works even if the document does not exist yet
+            uid?.let {
+                db.collection("users").document(it)
+                    .set(mapOf("username" to newUsername),
+                        com.google.firebase.firestore.SetOptions.merge())
+                    .await()
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun updateProfilePicture(uri: String) {
-        currentStats?.profilePictureUri = uri
-        // Save URI to Firestore (best effort)
-        uid?.let { db.collection("users").document(it).update("profilePictureUri", uri) }
+    // Suspend so ProfileView can await and refresh UI after
+    suspend fun updateProfilePicture(uri: String): Result<Unit> {
+        return try {
+            currentStats = currentStats?.copy(profilePictureUri = uri)
+            uid?.let {
+                db.collection("users").document(it)
+                    .set(mapOf("profilePictureUri" to uri),
+                        com.google.firebase.firestore.SetOptions.merge())
+                    .await()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.success(Unit)  // saved in memory even if Firestore fails
+        }
     }
+
+    // Always returns a fresh copy so Compose sees a new object and recomposes
+    fun getStatsCopy(): UserStatistics? = currentStats?.copy()
 
     // Save all stats to Firestore
     suspend fun saveToFirestore() {

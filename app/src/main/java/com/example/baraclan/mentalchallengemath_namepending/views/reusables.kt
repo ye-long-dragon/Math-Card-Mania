@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -49,7 +48,7 @@ import com.example.baraclan.mentalchallengemath_namepending.ui.theme.*
 
 @Composable
 fun DeveloperFace(
-    icon: ImageVector,
+    icon: Int,
     name: String
 ) {
     Column(
@@ -61,7 +60,7 @@ fun DeveloperFace(
             color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Image(
-                imageVector = icon,
+                painter = painterResource(id = icon),
                 contentDescription = name,
                 modifier = Modifier
                     .padding(16.dp)
@@ -72,7 +71,8 @@ fun DeveloperFace(
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
-            color = BlackBoardYellow
+            color = BlackBoardYellow,
+            fontFamily = Pixel
         )
     }
 }

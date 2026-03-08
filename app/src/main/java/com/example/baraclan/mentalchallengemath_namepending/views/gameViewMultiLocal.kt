@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.baraclan.mentalchallengemath_namepending.models.SoundManager
 import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
 import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.models.hand
@@ -115,7 +116,7 @@ fun LocalMultiplayer(
                     Text(
                         text = "⏱  %02d:%02d".format(minutes, seconds),
                         style = MaterialTheme.typography.titleMedium,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Pixel,
                         color = BlackBoardYellow,
                         fontSize = 18.sp
                     )
@@ -174,7 +175,7 @@ fun WinnerScreen(
         Text(
             text = "$winnerName Wins!",
             style = MaterialTheme.typography.displaySmall.copy(
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             )
@@ -184,7 +185,7 @@ fun WinnerScreen(
 
         Text(
             text = "Finished in %02d:%02d".format(minutes, seconds),
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Pixel,
             color = BlackBoardYellow.copy(alpha = 0.8f),
             fontSize = 18.sp
         )
@@ -199,7 +200,7 @@ fun WinnerScreen(
         ) {
             Text(
                 "Play Again",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow,
                 fontSize = 16.sp
             )
@@ -213,7 +214,7 @@ fun WinnerScreen(
         ) {
             Text(
                 "Return to Menu",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow
             )
         }
@@ -257,6 +258,7 @@ fun HalfScreen(
             playerHandState.removeCard(clickedCard, 1)
             equationCards.add(clickedCard)
         }
+        SoundManager.playPlace()
     }
 
     val onEquationCardClick: (cardGame) -> Unit = { clickedCard ->
@@ -264,6 +266,7 @@ fun HalfScreen(
             equationCards.remove(clickedCard)
             playerHandState.addCard(clickedCard, 1)
         }
+        SoundManager.playSlide()
     }
 
     // Progress indicator (e.g. "Goal 2 / 5")
@@ -287,7 +290,7 @@ fun HalfScreen(
             if (progressText.isNotEmpty()) {
                 Text(
                     text = progressText,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Pixel,
                     color = BlackBoardYellow.copy(alpha = 0.7f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(top = 2.dp)
@@ -307,7 +310,7 @@ fun HalfScreen(
                 text = "Select cards from your hand:",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 2.dp),
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
                 color = BlackBoardYellow
             )
 
@@ -348,7 +351,7 @@ fun HalfScreen(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Submit", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 12.sp)
+                Text("Submit", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 12.sp)
             }
 
             Button(
@@ -358,7 +361,7 @@ fun HalfScreen(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Clear", fontFamily = FontFamily.Monospace, color = BlackBoardYellow, fontSize = 12.sp)
+                Text("Clear", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 12.sp)
             }
         }
     }

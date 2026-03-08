@@ -41,7 +41,13 @@ fun ProfileView(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var stats by remember { mutableStateOf(UserStatsManager.getStats()) }
+    var stats by remember { mutableStateOf(UserStatsManager.getStatsCopy()) }
+
+    // Refresh stats + UI state when the screen first appears
+    LaunchedEffect(Unit) {
+        stats = UserStatsManager.getStatsCopy()
+        // profileUri will also be refreshed below via the stats update
+    }
 
     // ── Username editing ──────────────────────────────────────
     var isEditingUsername by remember { mutableStateOf(false) }
@@ -55,6 +61,18 @@ fun ProfileView(
         stats?.profilePictureUri?.let { Uri.parse(it) }
     ) }
 
+    // Keep profileUri in sync whenever stats changes
+    LaunchedEffect(stats?.profilePictureUri) {
+        profileUri = stats?.profilePictureUri?.let { Uri.parse(it) }
+    }
+
+    // Keep usernameInput in sync when not editing
+    LaunchedEffect(stats?.username) {
+        if (!isEditingUsername) {
+            usernameInput = stats?.username ?: ""
+        }
+    }
+
     // Camera: create a temp file URI for the photo
     val cameraUri = remember {
         val file = File(context.cacheDir, "profile_photo.jpg")
@@ -66,8 +84,10 @@ fun ProfileView(
     ) { success ->
         if (success) {
             profileUri = cameraUri
-            UserStatsManager.updateProfilePicture(cameraUri.toString())
-            stats = UserStatsManager.getStats()
+            scope.launch {
+                UserStatsManager.updateProfilePicture(cameraUri.toString())
+                stats = UserStatsManager.getStatsCopy()
+            }
         }
     }
 
@@ -76,8 +96,10 @@ fun ProfileView(
     ) { uri: Uri? ->
         uri?.let {
             profileUri = it
-            UserStatsManager.updateProfilePicture(it.toString())
-            stats = UserStatsManager.getStats()
+            scope.launch {
+                UserStatsManager.updateProfilePicture(it.toString())
+                stats = UserStatsManager.getStatsCopy()
+            }
         }
     }
 
@@ -176,7 +198,7 @@ fun ProfileView(
                             val result = UserStatsManager.updateUsername(usernameInput.trim())
                             usernameSaving = false
                             result.onSuccess {
-                                stats = UserStatsManager.getStats()
+                                stats = UserStatsManager.getStatsCopy()
                                 isEditingUsername = false
                             }.onFailure {
                                 usernameError = "Failed to save. Try again."
