@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +23,8 @@ import com.example.baraclan.mentalchallengemath_namepending.data.LobbySettings
 import com.example.baraclan.mentalchallengemath_namepending.data.LobbyStatus
 import com.example.baraclan.mentalchallengemath_namepending.data.OnlineLobby
 import com.example.baraclan.mentalchallengemath_namepending.data.OnlineLobbyRepository
+import com.example.baraclan.mentalchallengemath_namepending.models.Difficulty
+import com.example.baraclan.mentalchallengemath_namepending.models.GoalGenerator
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import kotlinx.coroutines.launch
 
@@ -44,6 +45,17 @@ fun OnlineLobbyScreen(
 
     // Default settings for new lobby
     var settings by remember { mutableStateOf(LobbySettings()) }
+    var selectedDifficulty by remember { mutableStateOf<Difficulty?>(null) }
+
+    // Show difficulty select for host before creating lobby
+    if (lobbyIdArg == "HOST_NEW" && selectedDifficulty == null) {
+        DifficultySelectScreen(
+            title = "Select Difficulty",
+            onDifficultySelected = { selectedDifficulty = it },
+            onNavigateBack = onNavigateBack
+        )
+        return
+    }
 
     // Create lobby if hosting
     LaunchedEffect(Unit) {
@@ -180,7 +192,9 @@ fun OnlineLobbyScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            val goals = generateGameGoals()
+                            val goals = GoalGenerator.generateMultiplayerGoals(
+                                selectedDifficulty ?: Difficulty.EASY
+                            )
                             OnlineLobbyRepository.startGame(currentLobbyId, goals)
                         }
                     },
@@ -428,6 +442,7 @@ fun PlayerLobbyRow(player: LobbyPlayer, isCurrentUser: Boolean) {
 // ─────────────────────────────────────────────────────────────
 // Helper: generate 5 game goals (shared across all players)
 // ─────────────────────────────────────────────────────────────
+// Legacy helper — kept for backward compatibility
 fun generateGameGoals(): List<Double> {
-    return (1..5).map { (1..20).random().toDouble() }
+    return GoalGenerator.generateMultiplayerGoals(Difficulty.EASY)
 }

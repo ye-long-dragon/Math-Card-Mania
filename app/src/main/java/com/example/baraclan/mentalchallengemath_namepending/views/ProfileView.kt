@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
 import com.example.baraclan.mentalchallengemath_namepending.models.LevelSystem
 import com.example.baraclan.mentalchallengemath_namepending.models.UserStatsManager
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
@@ -36,44 +37,46 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun ProfileView(
-    onNavigateBack: () -> Unit
-) {
+fun ProfileView(onNavigateBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var stats by remember { mutableStateOf(UserStatsManager.getStatsCopy()) }
+    val scope   = rememberCoroutineScope()
 
-    // Refresh stats + UI state when the screen first appears
-    LaunchedEffect(Unit) {
-        stats = UserStatsManager.getStatsCopy()
-        // profileUri will also be refreshed below via the stats update
+    // ── Source of truth: DeckRepository flows ─────────────────
+    val savedUsername by DeckRepository.getUsernameFlow(context)
+        .collectAsState(initial = "")
+    val savedPhotoUri by DeckRepository.getPhotoUriFlow(context)
+        .collectAsState(initial = null)
+
+    // ── XP / stats still come from UserStatsManager ───────────
+    var stats by remember { mutableStateOf(UserStatsManager.getStatsCopy()) }
+    LaunchedEffect(Unit) { stats = UserStatsManager.getStatsCopy() }
+
+    // ── Sync UserStatsManager username whenever DeckRepository changes ──
+    // (so in-memory stats object stays consistent)
+    LaunchedEffect(savedUsername) {
+        if (savedUsername.isNotBlank() &&
+            savedUsername != UserStatsManager.getStats()?.username) {
+            UserStatsManager.updateUsername(savedUsername)
+            stats = UserStatsManager.getStatsCopy()
+        }
     }
 
     // ── Username editing ──────────────────────────────────────
     var isEditingUsername by remember { mutableStateOf(false) }
-    var usernameInput by remember { mutableStateOf(stats?.username ?: "") }
-    var usernameSaving by remember { mutableStateOf(false) }
-    var usernameError by remember { mutableStateOf<String?>(null) }
+    var usernameInput     by remember { mutableStateOf("") }
+    var usernameSaving    by remember { mutableStateOf(false) }
+    var usernameError     by remember { mutableStateOf<String?>(null) }
 
-    // ── Photo picker ──────────────────────────────────────────
+    // Keep input in sync when not editing
+    LaunchedEffect(savedUsername) {
+        if (!isEditingUsername) usernameInput = savedUsername
+    }
+
+    // ── Photo dialog ──────────────────────────────────────────
     var showPhotoDialog by remember { mutableStateOf(false) }
-    var profileUri by remember { mutableStateOf<Uri?>(
-        stats?.profilePictureUri?.let { Uri.parse(it) }
-    ) }
 
-    // Keep profileUri in sync whenever stats changes
-    LaunchedEffect(stats?.profilePictureUri) {
-        profileUri = stats?.profilePictureUri?.let { Uri.parse(it) }
-    }
+    val profileUri: Uri? = savedPhotoUri?.let { Uri.parse(it) }
 
-    // Keep usernameInput in sync when not editing
-    LaunchedEffect(stats?.username) {
-        if (!isEditingUsername) {
-            usernameInput = stats?.username ?: ""
-        }
-    }
-
-    // Camera: create a temp file URI for the photo
     val cameraUri = remember {
         val file = File(context.cacheDir, "profile_photo.jpg")
         FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
@@ -83,8 +86,9 @@ fun ProfileView(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            profileUri = cameraUri
             scope.launch {
+                // Save to DeckRepository (local) + keep UserStatsManager in sync
+                DeckRepository.savePhotoUri(context, cameraUri.toString())
                 UserStatsManager.updateProfilePicture(cameraUri.toString())
                 stats = UserStatsManager.getStatsCopy()
             }
@@ -95,14 +99,17 @@ fun ProfileView(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            profileUri = it
             scope.launch {
+                DeckRepository.savePhotoUri(context, it.toString())
                 UserStatsManager.updateProfilePicture(it.toString())
                 stats = UserStatsManager.getStatsCopy()
             }
         }
     }
 
+    // ─────────────────────────────────────────────────────────
+    // UI
+    // ─────────────────────────────────────────────────────────
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -110,20 +117,13 @@ fun ProfileView(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Profile",
-            style = MaterialTheme.typography.headlineLarge,
-            fontFamily = Pixel,
-            color = BlackBoardYellow
-        )
+        Text("Profile", style = MaterialTheme.typography.headlineLarge,
+            fontFamily = Pixel, color = BlackBoardYellow)
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // ── Profile picture ───────────────────────────────────
-        Box(
-            modifier = Modifier.size(110.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
+        Box(modifier = Modifier.size(110.dp), contentAlignment = Alignment.BottomEnd) {
             if (profileUri != null) {
                 AsyncImage(
                     model = profileUri,
@@ -148,7 +148,6 @@ fun ProfileView(
                     Text("?", fontSize = 48.sp, color = BlackBoardYellow)
                 }
             }
-            // Camera badge
             Box(
                 modifier = Modifier
                     .size(32.dp)
@@ -157,12 +156,8 @@ fun ProfileView(
                     .clickable { showPhotoDialog = true },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.CameraAlt,
-                    contentDescription = "Change photo",
-                    tint = BlackBoardYellow,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Default.CameraAlt, contentDescription = "Change photo",
+                    tint = BlackBoardYellow, modifier = Modifier.size(18.dp))
             }
         }
 
@@ -181,34 +176,38 @@ fun ProfileView(
                     label = { Text("Username", fontFamily = Pixel) },
                     modifier = Modifier.weight(1f),
                     isError = usernameError != null,
-                    supportingText = usernameError?.let { { Text(it, color = MaterialTheme.colorScheme.error, fontFamily = Pixel) } }
+                    supportingText = usernameError?.let {
+                        { Text(it, color = MaterialTheme.colorScheme.error, fontFamily = Pixel) }
+                    }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 if (usernameSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = BlackBoardYellow, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp),
+                        color = BlackBoardYellow, strokeWidth = 2.dp)
                 } else {
+                    // ✓ Save — writes to DeckRepository + syncs UserStatsManager
                     IconButton(onClick = {
-                        if (usernameInput.isBlank()) {
+                        val trimmed = usernameInput.trim()
+                        if (trimmed.isBlank()) {
                             usernameError = "Username cannot be empty"
                             return@IconButton
                         }
                         usernameSaving = true
                         usernameError = null
                         scope.launch {
-                            val result = UserStatsManager.updateUsername(usernameInput.trim())
+                            // 1. Persist locally via DeckRepository
+                            DeckRepository.saveUsername(context, trimmed)
+                            // 2. Sync to UserStatsManager in-memory + Firestore
+                            UserStatsManager.updateUsername(trimmed)
+                            stats = UserStatsManager.getStatsCopy()
                             usernameSaving = false
-                            result.onSuccess {
-                                stats = UserStatsManager.getStatsCopy()
-                                isEditingUsername = false
-                            }.onFailure {
-                                usernameError = "Failed to save. Try again."
-                            }
+                            isEditingUsername = false
                         }
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "Save", tint = Color.Green)
                     }
                     IconButton(onClick = {
-                        usernameInput = stats?.username ?: ""
+                        usernameInput = savedUsername
                         usernameError = null
                         isEditingUsername = false
                     }) {
@@ -219,17 +218,17 @@ fun ProfileView(
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = stats?.username ?: "Unknown",
+                    text = savedUsername.ifBlank { "Unknown" },
                     style = MaterialTheme.typography.titleLarge,
-                    fontFamily = Pixel,
-                    color = BlackBoardYellow
+                    fontFamily = Pixel, color = BlackBoardYellow
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = {
-                    usernameInput = stats?.username ?: ""
+                    usernameInput = savedUsername
                     isEditingUsername = true
                 }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit username", tint = BlackBoardYellow, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, contentDescription = "Edit username",
+                        tint = BlackBoardYellow, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -238,9 +237,9 @@ fun ProfileView(
 
         // ── Level + XP bar ────────────────────────────────────
         stats?.let { s ->
-            val level = s.getLevel()
+            val level    = s.getLevel()
             val progress = s.getLevelProgress()
-            val xpIn = s.getXpInCurrentLevel()
+            val xpIn     = s.getXpInCurrentLevel()
             val xpNeeded = s.getXpNeededInLevel()
 
             Column(
@@ -251,53 +250,28 @@ fun ProfileView(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
+                Row(modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Level $level",
-                        fontFamily = Pixel,
-                        color = BlackBoardYellow,
-                        fontSize = 22.sp
-                    )
-                    Text(
-                        text = "${s.totalXp} XP total",
-                        fontFamily = Pixel,
-                        color = BlackBoardYellow.copy(alpha = 0.6f),
-                        fontSize = 12.sp
-                    )
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Level $level", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 22.sp)
+                    Text("${s.totalXp} XP total", fontFamily = Pixel,
+                        color = BlackBoardYellow.copy(alpha = 0.6f), fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(5.dp)),
-                    color = BlackBoardYellow,
-                    trackColor = BlackBoardYellow.copy(alpha = 0.2f)
+                    modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                    color = BlackBoardYellow, trackColor = BlackBoardYellow.copy(alpha = 0.2f)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (level < LevelSystem.maxLevel) {
-                    Text(
-                        text = "$xpIn / $xpNeeded XP to Level ${level + 1}",
-                        fontFamily = Pixel,
-                        color = BlackBoardYellow.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Text("$xpIn / $xpNeeded XP to Level ${level + 1}",
+                        fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f),
+                        fontSize = 11.sp, textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth())
                 } else {
-                    Text(
-                        text = "Max Level Reached!",
-                        fontFamily = Pixel,
-                        color = BlackBoardYellow,
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Text("Max Level Reached!", fontFamily = Pixel, color = BlackBoardYellow,
+                        fontSize = 11.sp, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -306,47 +280,27 @@ fun ProfileView(
 
         // ── Stats cards ───────────────────────────────────────
         stats?.let { s ->
-            StatsCard(
-                title = "Singleplayer",
-                wins = s.singleplayerWins,
-                losses = s.singleplayerLosses,
-                ties = s.singleplayerTies,
-                total = s.getTotalSingleplayerGames()
-            )
+            StatsCard("Singleplayer", s.singleplayerWins, s.singleplayerLosses,
+                s.singleplayerTies, s.getTotalSingleplayerGames())
             Spacer(modifier = Modifier.height(12.dp))
-            StatsCard(
-                title = "Local Multiplayer — Red",
-                wins = s.localMultiplayerWinsRed,
-                losses = s.localMultiplayerLossesRed,
-                ties = s.localMultiplayerTiesRed,
-                total = s.getTotalLocalMultiplayerGamesRed()
-            )
+            StatsCard("Local Multiplayer — Red", s.localMultiplayerWinsRed,
+                s.localMultiplayerLossesRed, s.localMultiplayerTiesRed,
+                s.getTotalLocalMultiplayerGamesRed())
             Spacer(modifier = Modifier.height(12.dp))
-            StatsCard(
-                title = "Local Multiplayer — Blue",
-                wins = s.localMultiplayerWinsBlue,
-                losses = s.localMultiplayerLossesBlue,
-                ties = s.localMultiplayerTiesBlue,
-                total = s.getTotalLocalMultiplayerGamesBlue()
-            )
+            StatsCard("Local Multiplayer — Blue", s.localMultiplayerWinsBlue,
+                s.localMultiplayerLossesBlue, s.localMultiplayerTiesBlue,
+                s.getTotalLocalMultiplayerGamesBlue())
             Spacer(modifier = Modifier.height(12.dp))
-            StatsCard(
-                title = "Online Multiplayer",
-                wins = s.onlineMultiplayerWins,
-                losses = s.onlineMultiplayerLosses,
-                ties = s.onlineMultiplayerTies,
-                total = s.getTotalOnlineMultiplayerGames()
-            )
-        } ?: run {
-            Text("No profile data available", fontFamily = Pixel, color = MaterialTheme.colorScheme.onSurface)
-        }
+            StatsCard("Online Multiplayer", s.onlineMultiplayerWins,
+                s.onlineMultiplayerLosses, s.onlineMultiplayerTies,
+                s.getTotalOnlineMultiplayerGames())
+        } ?: Text("No profile data available", fontFamily = Pixel,
+            color = MaterialTheme.colorScheme.onSurface)
 
         Spacer(modifier = Modifier.height(24.dp))
-
         Button(onClick = onNavigateBack) {
             Text("Back to Menu", fontFamily = Pixel, color = BlackBoardYellow)
         }
-
         Spacer(modifier = Modifier.height(16.dp))
     }
 
@@ -357,18 +311,12 @@ fun ProfileView(
             title = { Text("Change Profile Picture", fontFamily = Pixel, color = BlackBoardYellow) },
             text = { Text("Choose a source", fontFamily = Pixel, color = BlackBoardYellow) },
             confirmButton = {
-                TextButton(onClick = {
-                    showPhotoDialog = false
-                    cameraLauncher.launch(cameraUri)
-                }) {
+                TextButton(onClick = { showPhotoDialog = false; cameraLauncher.launch(cameraUri) }) {
                     Text("📷  Camera", fontFamily = Pixel, color = BlackBoardYellow)
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showPhotoDialog = false
-                    galleryLauncher.launch("image/*")
-                }) {
+                TextButton(onClick = { showPhotoDialog = false; galleryLauncher.launch("image/*") }) {
                     Text("🖼  Gallery", fontFamily = Pixel, color = BlackBoardYellow)
                 }
             }
@@ -380,26 +328,21 @@ fun ProfileView(
 // Reusable stats card
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun StatsCard(
-    title: String,
-    wins: Int,
-    losses: Int,
-    ties: Int,
-    total: Int
-) {
+private fun StatsCard(title: String, wins: Int, losses: Int, ties: Int, total: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontFamily = Pixel, color = BlackBoardYellow)
+            Text(title, style = MaterialTheme.typography.titleMedium,
+                fontFamily = Pixel, color = BlackBoardYellow)
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                StatChip(label = "W", value = wins, color = Color(0xFF4CAF50))
-                StatChip(label = "L", value = losses, color = Color(0xFFF44336))
-                StatChip(label = "T", value = ties, color = Color(0xFFFF9800))
-                StatChip(label = "Total", value = total, color = BlackBoardYellow)
+                StatChip("W", wins, Color(0xFF4CAF50))
+                StatChip("L", losses, Color(0xFFF44336))
+                StatChip("T", ties, Color(0xFFFF9800))
+                StatChip("Total", total, BlackBoardYellow)
             }
         }
     }
@@ -408,7 +351,7 @@ private fun StatsCard(
 @Composable
 private fun StatChip(label: String, value: Int, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "$value", fontFamily = Pixel, color = color, fontSize = 20.sp)
-        Text(text = label, fontFamily = Pixel, color = color.copy(alpha = 0.7f), fontSize = 11.sp)
+        Text("$value", fontFamily = Pixel, color = color, fontSize = 20.sp)
+        Text(label, fontFamily = Pixel, color = color.copy(alpha = 0.7f), fontSize = 11.sp)
     }
 }

@@ -18,7 +18,9 @@ val Context.deckDataStore by preferencesDataStore(name = "saved_decks")
 
 object DeckRepository {
 
-    private val DECKS_KEY = stringPreferencesKey("decks_json")
+    private val DECKS_KEY    = stringPreferencesKey("decks_json")
+    private val USERNAME_KEY  = stringPreferencesKey("profile_username")
+    private val PHOTO_URI_KEY = stringPreferencesKey("profile_photo_uri")
 
     // ── READ: returns a Flow of all saved decks ───────────────
     fun getDecksFlow(context: Context): Flow<List<deck>> {
@@ -45,6 +47,22 @@ object DeckRepository {
             existing.removeAll { it.name == deckName }
             prefs[DECKS_KEY] = serializeDecks(existing)
         }
+    }
+
+    // ── Profile: username ────────────────────────────────────
+    fun getUsernameFlow(context: Context): Flow<String> =
+        context.deckDataStore.data.map { prefs -> prefs[USERNAME_KEY] ?: "" }
+
+    suspend fun saveUsername(context: Context, username: String) {
+        context.deckDataStore.edit { prefs -> prefs[USERNAME_KEY] = username }
+    }
+
+    // ── Profile: photo URI ────────────────────────────────────
+    fun getPhotoUriFlow(context: Context): Flow<String?> =
+        context.deckDataStore.data.map { prefs -> prefs[PHOTO_URI_KEY] }
+
+    suspend fun savePhotoUri(context: Context, uri: String) {
+        context.deckDataStore.edit { prefs -> prefs[PHOTO_URI_KEY] = uri }
     }
 
     // ── Serialization helpers ─────────────────────────────────

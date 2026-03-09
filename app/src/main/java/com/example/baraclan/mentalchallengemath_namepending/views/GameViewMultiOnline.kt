@@ -52,6 +52,7 @@ fun GameViewMultiOnline(
     var currentScore by remember { mutableStateOf(0) }
     var currentTurn by remember { mutableStateOf(1) }
     var currentGoalIndex by remember { mutableStateOf(0) }
+    val deckSnapshot = remember { playerDeck.getAllCardsWithCounts().toMap() }
     var gameDeckState by remember { mutableStateOf(deck("Online Game Deck")) }
     var playerHandState by remember { mutableStateOf(hand("Online Hand")) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
@@ -59,6 +60,8 @@ fun GameViewMultiOnline(
     var draggedCard by remember { mutableStateOf<cardGame?>(null) }
     var dragSource by remember { mutableStateOf<String?>(null) }
     var iFinished by remember { mutableStateOf(false) }
+    var showDeckOverlay by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
 
     // ── Timers ────────────────────────────────────────────────
     var elapsedSeconds by remember { mutableStateOf(0) }
@@ -126,7 +129,7 @@ fun GameViewMultiOnline(
     // ── Start new round ───────────────────────────────────────
     val startNewRound: () -> Unit = {
         if (currentGoalIndex < gameGoals.size) {
-            gameDeckState = deck(playerDeck.name, playerDeck.getAllCardsWithCounts())
+            gameDeckState = deck(playerDeck.name, deckSnapshot)
             playerHandState = RandomHand(gameDeckState)
             equationCards.clear()
             cardBin = collection("Card Bin")
@@ -176,7 +179,6 @@ fun GameViewMultiOnline(
         if (draggedCard != null && dragSource == "hand") {
             moveCardToEquation(draggedCard!!); draggedCard = null; dragSource = null
         } else moveCardToEquation(clickedCard)
-        SoundManager.playPlace()
     }
     val onHandCardLongPress: (cardGame) -> Unit = { card ->
         if (playerHandState.contains(card)) { draggedCard = card; dragSource = "hand" }
@@ -185,7 +187,6 @@ fun GameViewMultiOnline(
         if (draggedCard != null && dragSource == "equation") {
             moveCardToHand(draggedCard!!); draggedCard = null; dragSource = null
         } else moveCardToHand(clickedCard)
-        SoundManager.playSlide()
     }
     val onEquationCardLongPress: (cardGame) -> Unit = { card ->
         if (equationCards.contains(card)) { draggedCard = card; dragSource = "equation" }
@@ -265,6 +266,22 @@ fun GameViewMultiOnline(
         return
     }
 
+    // ── Settings overlay ─────────────────────────────────────
+    if (showSettings) {
+        SettingsScreen(onNavigateBack = { showSettings = false })
+        return
+    }
+
+    // ── Deck overlay ──────────────────────────────────────────
+    if (showDeckOverlay) {
+        ShowDeckOverlay(
+            allDeckCards = playerDeck.getAllCardsAsList(),
+            handCards = playerHandState.getAllCardsAsList(),
+            binCards = cardBin.getAllCardsAsList(),
+            onDismiss = { showDeckOverlay = false }
+        )
+    }
+
     // ── Main game UI — mirrors GameView layout exactly ────────
     val minutes = elapsedSeconds / 60
     val seconds = elapsedSeconds % 60
@@ -274,8 +291,13 @@ fun GameViewMultiOnline(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Status bar + online info row
+        // Top bar + status
         Column {
+            GameTopBar(
+                onReturnToMenu = onReturnToMenu,
+                onShowDeck = { showDeckOverlay = true },
+                onOpenSettings = { showSettings = true }
+            )
             statusBar(currentScore, currentTurn)
             Row(
                 modifier = Modifier

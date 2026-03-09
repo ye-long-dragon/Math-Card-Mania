@@ -164,22 +164,25 @@ object UserStatsManager {
         currentStats?.let { update(it) }
     }
 
-    // Update username — replaces the whole object so UI state updates correctly
+    // Update username in-memory + Firestore (if online).
+    // Called by ProfileView after DeckRepository.saveUsername() already persisted locally.
     suspend fun updateUsername(newUsername: String): Result<Unit> {
         return try {
             currentStats = currentStats?.copy(username = newUsername)
-            val profileUpdates = userProfileChangeRequest { displayName = newUsername }
-            auth.currentUser?.updateProfile(profileUpdates)?.await()
-            // set+merge works even if the document does not exist yet
-            uid?.let {
-                db.collection("users").document(it)
+            // Only sync to Firebase if a user is signed in (non-offline mode)
+            val currentUid = uid
+            if (currentUid != null) {
+                val profileUpdates = userProfileChangeRequest { displayName = newUsername }
+                auth.currentUser?.updateProfile(profileUpdates)?.await()
+                db.collection("users").document(currentUid)
                     .set(mapOf("username" to newUsername),
                         com.google.firebase.firestore.SetOptions.merge())
                     .await()
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            // Still succeeded locally — don't surface Firestore errors to ProfileView
+            Result.success(Unit)
         }
     }
 

@@ -1,6 +1,8 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,10 +13,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.baraclan.mentalchallengemath_namepending.models.SoundManager
 import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
 import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.models.hand
+import com.example.baraclan.mentalchallengemath_namepending.models.Difficulty
+import com.example.baraclan.mentalchallengemath_namepending.models.GoalGenerator
+import com.example.baraclan.mentalchallengemath_namepending.models.collection
 import com.example.baraclan.mentalchallengemath_namepending.scripts.RandomHand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.evaluateEquation
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
@@ -25,18 +29,25 @@ enum class Winner { PLAYER1, PLAYER2, NONE }
 
 @Composable
 fun LocalMultiplayer(
-    availableDecks: List<deck>,          // pass in decks loaded from local storage
+    availableDecks: List<deck>,
     onReturnToMultiplayerMenu: () -> Unit
 ) {
     var player1Deck by remember { mutableStateOf<deck?>(null) }
     var player2Deck by remember { mutableStateOf<deck?>(null) }
     var decksSelected by remember { mutableStateOf(false) }
+    var selectedDifficulty by remember { mutableStateOf<Difficulty?>(null) }
 
-    // Shared game state
-    val matchGoals = remember { gameGoal.shuffled().take(5) }
+    // Shared game state — 5 rounds × 10 goals = 50 goals
+    val matchGoals = remember(selectedDifficulty) {
+        if (selectedDifficulty != null)
+            GoalGenerator.generateMultiplayerGoals(selectedDifficulty!!)
+        else emptyList()
+    }
     var winner by remember { mutableStateOf(Winner.NONE) }
     var winnerTimeSeconds by remember { mutableStateOf(0) }
     var elapsedSeconds by remember { mutableStateOf(0) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showBackConfirm by remember { mutableStateOf(false) }
     val timerRunning = decksSelected && winner == Winner.NONE
 
     // Stopwatch — stops when someone wins
@@ -49,7 +60,41 @@ fun LocalMultiplayer(
         }
     }
 
+    // ── Settings overlay ─────────────────────────────────────
+    if (showSettings) {
+        SettingsScreen(onNavigateBack = { showSettings = false })
+        return
+    }
+
+    // ── Back confirm dialog ───────────────────────────────────
+    if (showBackConfirm) {
+        AlertDialog(
+            onDismissRequest = { showBackConfirm = false },
+            title = { Text("Return to Menu?", fontFamily = Pixel, color = BlackBoardYellow) },
+            text = { Text("Your current game will be lost.", fontFamily = Pixel, color = BlackBoardYellow) },
+            confirmButton = {
+                TextButton(onClick = { showBackConfirm = false; onReturnToMultiplayerMenu() }) {
+                    Text("Yes", fontFamily = Pixel, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackConfirm = false }) {
+                    Text("Cancel", fontFamily = Pixel, color = BlackBoardYellow)
+                }
+            }
+        )
+    }
+
     when {
+        // ── 0. Difficulty selection ────────────────────────────
+        selectedDifficulty == null -> {
+            DifficultySelectScreen(
+                title = "Select Difficulty",
+                onDifficultySelected = { selectedDifficulty = it },
+                onNavigateBack = onReturnToMultiplayerMenu
+            )
+        }
+
         // ── 1. Deck selection ──────────────────────────────────
         !decksSelected -> {
             SelectDeckScreen(
@@ -105,6 +150,20 @@ fun LocalMultiplayer(
                     )
                 }
 
+                // Top bar with back + settings (normal orientation)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { showBackConfirm = true }) {
+                        Icon(androidx.compose.material.icons.Icons.Default.ArrowBack, contentDescription = "Back", tint = BlackBoardYellow)
+                    }
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings", tint = BlackBoardYellow)
+                    }
+                }
+
                 // Shared timer bar in the middle
                 Row(
                     modifier = Modifier
@@ -116,7 +175,7 @@ fun LocalMultiplayer(
                     Text(
                         text = "⏱  %02d:%02d".format(minutes, seconds),
                         style = MaterialTheme.typography.titleMedium,
-                        fontFamily = Pixel,
+                        fontFamily = FontFamily.Monospace,
                         color = BlackBoardYellow,
                         fontSize = 18.sp
                     )
@@ -175,7 +234,7 @@ fun WinnerScreen(
         Text(
             text = "$winnerName Wins!",
             style = MaterialTheme.typography.displaySmall.copy(
-                fontFamily = Pixel,
+                fontFamily = FontFamily.Monospace,
                 color = BlackBoardYellow,
                 textAlign = TextAlign.Center
             )
@@ -185,7 +244,7 @@ fun WinnerScreen(
 
         Text(
             text = "Finished in %02d:%02d".format(minutes, seconds),
-            fontFamily = Pixel,
+            fontFamily = FontFamily.Monospace,
             color = BlackBoardYellow.copy(alpha = 0.8f),
             fontSize = 18.sp
         )
@@ -200,7 +259,7 @@ fun WinnerScreen(
         ) {
             Text(
                 "Play Again",
-                fontFamily = Pixel,
+                fontFamily = FontFamily.Monospace,
                 color = BlackBoardYellow,
                 fontSize = 16.sp
             )
@@ -214,7 +273,7 @@ fun WinnerScreen(
         ) {
             Text(
                 "Return to Menu",
-                fontFamily = Pixel,
+                fontFamily = FontFamily.Monospace,
                 color = BlackBoardYellow
             )
         }
@@ -235,19 +294,23 @@ fun HalfScreen(
     var currentTurn by remember { mutableStateOf(1) }
     var currentGoalIndex by remember { mutableStateOf(0) }
     var gameFinished by remember { mutableStateOf(false) }
+    val deckSnapshot = remember { initialDeck.getAllCardsWithCounts().toMap() }
     var gameDeckState by remember { mutableStateOf(deck("Game Deck Copy")) }
     var playerHandState by remember { mutableStateOf(hand("Player's Current Hand")) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
+    var cardBin by remember { mutableStateOf(collection("Card Bin")) }
+    var showDeckOverlay by remember { mutableStateOf(false) }
 
     val startNewRound: () -> Unit = {
         if (currentGoalIndex < gameGoals.size) {
-            gameDeckState = deck(initialDeck.name, initialDeck.getAllCardsWithCounts())
+            gameDeckState = deck(initialDeck.name, deckSnapshot)
             playerHandState = RandomHand(gameDeckState)
             equationCards.clear()
+            cardBin = collection("Card Bin")
             currentTurn = 1
         } else {
             gameFinished = true
-            onGameCompleted() // ← notifies LocalMultiplayer who won
+            onGameCompleted()
         }
     }
 
@@ -258,7 +321,6 @@ fun HalfScreen(
             playerHandState.removeCard(clickedCard, 1)
             equationCards.add(clickedCard)
         }
-        SoundManager.playPlace()
     }
 
     val onEquationCardClick: (cardGame) -> Unit = { clickedCard ->
@@ -266,13 +328,22 @@ fun HalfScreen(
             equationCards.remove(clickedCard)
             playerHandState.addCard(clickedCard, 1)
         }
-        SoundManager.playSlide()
     }
 
     // Progress indicator (e.g. "Goal 2 / 5")
     val progressText = if (!gameFinished)
         "Goal ${currentGoalIndex + 1} / ${gameGoals.size}"
     else ""
+
+    // Deck overlay for this player's half
+    if (showDeckOverlay) {
+        ShowDeckOverlay(
+            allDeckCards = initialDeck.getAllCardsAsList(),
+            handCards = playerHandState.getAllCardsAsList(),
+            binCards = cardBin.getAllCardsAsList(),
+            onDismiss = { showDeckOverlay = false }
+        )
+    }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -310,7 +381,7 @@ fun HalfScreen(
                 text = "Select cards from your hand:",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 2.dp),
-                fontFamily = Pixel,
+                fontFamily = FontFamily.Monospace,
                 color = BlackBoardYellow
             )
 
@@ -341,10 +412,13 @@ fun HalfScreen(
                     else equationResult in (currentTargetGoal * (1 - margin))..(currentTargetGoal * (1 + margin))
 
                     if (hit) {
+                        equationCards.forEach { cardBin.addCard(it, 1) }
+                        equationCards.clear()
                         currentScore += 100
                         currentGoalIndex++
                         startNewRound()
                     } else {
+                        equationCards.forEach { cardBin.addCard(it, 1) }
                         equationCards.clear()
                         currentTurn++
                     }
@@ -362,6 +436,13 @@ fun HalfScreen(
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Clear", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 12.sp)
+            }
+
+            Button(
+                onClick = { showDeckOverlay = true },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Deck", fontFamily = Pixel, color = BlackBoardYellow, fontSize = 12.sp)
             }
         }
     }

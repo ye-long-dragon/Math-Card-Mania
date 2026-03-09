@@ -6,27 +6,21 @@ import com.example.baraclan.mentalchallengemath_namepending.R
 
 object SoundManager {
     private var soundPool: SoundPool? = null
-    private val placeSounds = mutableListOf<Int>() // card-place-1 to 4
-    private val slideSounds = mutableListOf<Int>() // card-slide-1 to 8
+    private val placeSounds = mutableListOf<Int>()
+    private val slideSounds = mutableListOf<Int>()
     private var loaded = false
+    private var masterVolume: Float = 1.0f
+    private var sfxVolume: Float = 1.0f
+    private var sfxEnabled: Boolean = true
 
     fun init(context: Context) {
         if (loaded) return
-        soundPool = SoundPool.Builder()
-            .setMaxStreams(4)
-            .build()
-
+        soundPool = SoundPool.Builder().setMaxStreams(4).build()
         val sp = soundPool!!
-        placeSounds.clear()
-        slideSounds.clear()
-
-        // Load card-place-1 through card-place-4
         placeSounds.add(sp.load(context, R.raw.card_place_1, 1))
         placeSounds.add(sp.load(context, R.raw.card_place_2, 1))
         placeSounds.add(sp.load(context, R.raw.card_place_3, 1))
         placeSounds.add(sp.load(context, R.raw.card_place_4, 1))
-
-        // Load card-slide-1 through card-slide-8
         slideSounds.add(sp.load(context, R.raw.card_slide_1, 1))
         slideSounds.add(sp.load(context, R.raw.card_slide_2, 1))
         slideSounds.add(sp.load(context, R.raw.card_slide_3, 1))
@@ -35,20 +29,25 @@ object SoundManager {
         slideSounds.add(sp.load(context, R.raw.card_slide_6, 1))
         slideSounds.add(sp.load(context, R.raw.card_slide_7, 1))
         slideSounds.add(sp.load(context, R.raw.card_slide_8, 1))
-
         loaded = true
     }
 
+    fun applySettings(settings: AudioSettings) {
+        sfxEnabled = settings.sfxEnabled
+        masterVolume = settings.masterVolume
+        sfxVolume = settings.sfxVolume
+    }
+
     fun playPlace() {
-        val sp = soundPool ?: return
-        val sound = placeSounds.randomOrNull() ?: return
-        sp.play(sound, 1f, 1f, 1, 0, 1f)
+        if (!sfxEnabled) return
+        val vol = (masterVolume * sfxVolume).coerceIn(0f, 1f)
+        soundPool?.play(placeSounds.randomOrNull() ?: return, vol, vol, 1, 0, 1f)
     }
 
     fun playSlide() {
-        val sp = soundPool ?: return
-        val sound = slideSounds.randomOrNull() ?: return
-        sp.play(sound, 1f, 1f, 1, 0, 1f)
+        if (!sfxEnabled) return
+        val vol = (masterVolume * sfxVolume).coerceIn(0f, 1f)
+        soundPool?.play(slideSounds.randomOrNull() ?: return, vol, vol, 1, 0, 1f)
     }
 
     fun release() {

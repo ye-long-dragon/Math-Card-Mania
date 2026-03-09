@@ -23,6 +23,7 @@ import com.example.baraclan.mentalchallengemath_namepending.models.*
 import java.util.UUID
 import com.example.baraclan.mentalchallengemath_namepending.models.MusicManager
 import com.example.baraclan.mentalchallengemath_namepending.models.SoundManager
+import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────
 // Nav routes
@@ -43,6 +44,7 @@ object NavRoutes {
     const val EditDeckSelect = "edit_deck_select"
     const val Tutorial = "tutorial"
     const val Profile = "profile"
+    const val Settings = "settings"
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -205,9 +207,19 @@ fun AppNavigation(
     val navController = rememberNavController()
     val context = LocalContext.current
     val availableCollection = fullCollection()
+    var isOfflineMode by remember { mutableStateOf(false) }
 
     // Load saved decks from local storage — available throughout the nav graph
     val savedDecks by DeckRepository.getDecksFlow(context).collectAsState(initial = emptyList())
+
+    // Seed UserStatsManager with locally-stored username on app start
+    val savedUsername by DeckRepository.getUsernameFlow(context).collectAsState(initial = "")
+    LaunchedEffect(savedUsername) {
+        if (savedUsername.isNotBlank() &&
+            savedUsername != com.example.baraclan.mentalchallengemath_namepending.models.UserStatsManager.getStats()?.username) {
+            com.example.baraclan.mentalchallengemath_namepending.models.UserStatsManager.updateUsername(savedUsername)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -217,6 +229,13 @@ fun AppNavigation(
         composable(NavRoutes.Login) {
             LoginScreen(
                 onLoginSuccess = {
+                    isOfflineMode = false
+                    navController.navigate(NavRoutes.Menu) {
+                        popUpTo(NavRoutes.Login) { inclusive = true }
+                    }
+                },
+                onPlayOffline = {
+                    isOfflineMode = true
                     navController.navigate(NavRoutes.Menu) {
                         popUpTo(NavRoutes.Login) { inclusive = true }
                     }
@@ -244,8 +263,10 @@ fun AppNavigation(
         }
 
         composable(NavRoutes.Menu) {
+            val menuScope = rememberCoroutineScope()
             menu(
                 onLogout = {
+                    menuScope.launch { SessionManager.clearSession(context) }
                     navController.navigate(NavRoutes.Login) {
                         popUpTo(NavRoutes.Menu) { inclusive = true }
                     }
@@ -255,7 +276,8 @@ fun AppNavigation(
                 onStartGameClick = { navController.navigate(NavRoutes.GameSingle) },
                 onMultiplayerGameClick = { navController.navigate(NavRoutes.MultiplayerView) },
                 onTutorialClick = { navController.navigate(NavRoutes.Tutorial) },
-                onProfileClick = { navController.navigate(NavRoutes.Profile) }
+                onProfileClick = { navController.navigate(NavRoutes.Profile) },
+                onSettingsClick = { navController.navigate(NavRoutes.Settings) }
             )
         }
 
@@ -304,11 +326,18 @@ fun AppNavigation(
             )
         }
 
+        composable(NavRoutes.Settings) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable(NavRoutes.MultiplayerView) {
             MultiplayerSelectScreen(
                 onNavigateToMenu = { navController.navigate(NavRoutes.Menu) },
                 onNavigateToOnline = { navController.navigate(NavRoutes.OnlineMultiplayer) },
-                onNavigateToLocal = { navController.navigate(NavRoutes.LocalMultiplayer) }
+                onNavigateToLocal = { navController.navigate(NavRoutes.LocalMultiplayer) },
+                isOfflineMode = isOfflineMode
             )
         }
 

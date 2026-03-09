@@ -1,67 +1,147 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
+import android.content.Context
+import android.util.Log
 import android.util.Patterns
 import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.example.baraclan.mentalchallengemath_namepending.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.util.Log
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.example.baraclan.mentalchallengemath_namepending.R
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// ─────────────────────────────────────────────────────────────
+// Session DataStore — persists login for 30 days
+// ─────────────────────────────────────────────────────────────
+private val Context.sessionDataStore by preferencesDataStore(name = "session")
+
+private val KEY_UID        = stringPreferencesKey("uid")
+private val KEY_LOGIN_TIME = longPreferencesKey("login_time")
+private val KEY_IS_OFFLINE = androidx.datastore.preferences.core.booleanPreferencesKey("is_offline")
+
+private const val SESSION_DURATION_MS = 30L * 24 * 60 * 60 * 1000  // 30 days
+
+object SessionManager {
+    /** Save a successful online login. */
+    suspend fun saveOnlineSession(context: Context, uid: String) {
+        context.sessionDataStore.edit { prefs ->
+            prefs[KEY_UID]        = uid
+            prefs[KEY_LOGIN_TIME] = System.currentTimeMillis()
+            prefs[KEY_IS_OFFLINE] = false
+        }
+    }
+
+    /** Save offline mode (no uid needed). */
+    suspend fun saveOfflineSession(context: Context) {
+        context.sessionDataStore.edit { prefs ->
+            prefs[KEY_UID]        = ""
+            prefs[KEY_LOGIN_TIME] = System.currentTimeMillis()
+            prefs[KEY_IS_OFFLINE] = true
+        }
+    }
+
+    /** Returns true if a valid (non-expired) session exists. */
+    suspend fun hasValidSession(context: Context): Boolean {
+        val prefs     = context.sessionDataStore.data.first()
+        val loginTime = prefs[KEY_LOGIN_TIME] ?: return false
+        val elapsed   = System.currentTimeMillis() - loginTime
+        return elapsed < SESSION_DURATION_MS
+    }
+
+    /** Returns true if the saved session is offline mode. */
+    suspend fun isOfflineSession(context: Context): Boolean {
+        val prefs = context.sessionDataStore.data.first()
+        return prefs[KEY_IS_OFFLINE] ?: false
+    }
+
+    /** Clear session on logout. */
+    suspend fun clearSession(context: Context) {
+        context.sessionDataStore.edit { it.clear() }
+    }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Shared helpers
 // ─────────────────────────────────────────────────────────────
-
-// Declare once — used by all three screens
-
-
-// Reusable no-ripple click modifier
 fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.clickable(
     interactionSource = MutableInteractionSource(),
     indication = null,
     onClick = onClick
 )
 
-// Email validation using Android's built-in pattern
-fun String.isValidEmail(): Boolean =
-    Patterns.EMAIL_ADDRESS.matcher(this).matches()
-
-// Password strength check (min 8 chars, at least 1 digit)
-fun String.isStrongPassword(): Boolean =
-    this.length >= 8 && this.any { it.isDigit() }
-
+fun String.isValidEmail(): Boolean = Patterns.EMAIL_ADDRESS.matcher(this).matches()
+fun String.isStrongPassword(): Boolean = this.length >= 8 && this.any { it.isDigit() }
 
 // ─────────────────────────────────────────────────────────────
-// Firebase Manager — now using Firebase Authentication
+// Password field with eye icon
+// ─────────────────────────────────────────────────────────────
+@Composable
+fun PasswordField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    supportingText: @Composable (() -> Unit)? = null
+) {
+    var visible by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, fontFamily = Pixel) },
+        supportingText = supportingText,
+        modifier = modifier,
+        singleLine = true,
+        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        trailingIcon = {
+            IconButton(onClick = { visible = !visible }) {
+                Icon(
+                    imageVector = if (visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    contentDescription = if (visible) "Hide password" else "Show password",
+                    tint = BlackBoardYellow.copy(alpha = 0.7f)
+                )
+            }
+        }
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Firebase Manager
 // ─────────────────────────────────────────────────────────────
 object FirebaseManager {
     private val auth: FirebaseAuth = Firebase.auth
     private val db = Firebase.firestore
 
-    // 1. LOGIN
     suspend fun loginUser(email: String, password: String): Result<String> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
@@ -75,24 +155,13 @@ object FirebaseManager {
         }
     }
 
-    // 2. SIGN UP — creates Auth user + saves username to Firestore
     suspend fun signUpUser(username: String, email: String, password: String): Result<Unit> {
         return try {
-            // Step 1: Create the Firebase Auth account
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid
                 ?: return Result.failure(Exception("Sign up failed. Please try again."))
-
-            Log.d("FirebaseManager", "Auth user created: uid=$uid")
-
-            // Step 2: Save username + email to Firestore under the user's uid
-            val userDoc = hashMapOf(
-                "username" to username,
-                "email" to email,
-                "uid" to uid
-            )
+            val userDoc = hashMapOf("username" to username, "email" to email, "uid" to uid)
             db.collection("users").document(uid).set(userDoc).await()
-
             Log.d("FirebaseManager", "Firestore user document created for uid=$uid")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -101,19 +170,15 @@ object FirebaseManager {
         }
     }
 
-    // 3. FORGOT PASSWORD — sends a real reset email (no plaintext password needed)
     suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
         return try {
             auth.sendPasswordResetEmail(email).await()
-            Log.d("FirebaseManager", "Password reset email sent to $email")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("FirebaseManager", "Reset error: ${e.message}")
             Result.failure(Exception("Could not send reset email. Check the address and try again."))
         }
     }
 }
-
 
 // ─────────────────────────────────────────────────────────────
 // 1. Login Screen
@@ -121,23 +186,28 @@ object FirebaseManager {
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onPlayOffline: () -> Unit,
     onNavigateToSignUp: () -> Unit,
     onForgotPassword: () -> Unit
 ) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent
-    ) {
+    // Auto-login if valid session exists
+    LaunchedEffect(Unit) {
+        if (SessionManager.hasValidSession(context)) {
+            if (SessionManager.isOfflineSession(context)) onPlayOffline()
+            else onLoginSuccess()
+        }
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -147,110 +217,83 @@ fun LoginScreen(
                 modifier = Modifier.size(100.dp),
                 contentScale = ContentScale.Fit
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Math Card Mania",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 32.dp),
-                fontSize = 42.sp,
-                fontFamily = Pixel,
-                textAlign = TextAlign.Center,
-                color = BlackBoardYellow
+                fontSize = 42.sp, fontFamily = Pixel,
+                textAlign = TextAlign.Center, color = BlackBoardYellow
             )
 
-            // Email field (login now uses email, not username)
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = email, onValueChange = { email = it },
                 label = { Text("Email", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+            PasswordField(
+                value = password, onValueChange = { password = it },
+                label = "Password",
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
             )
 
-            // "Forgot password?" link
             Text(
                 text = "Forgot password?",
                 color = BlackBoardYellow,
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .clickableNoRipple { onForgotPassword() },
+                modifier = Modifier.padding(bottom = 16.dp).clickableNoRipple { onForgotPassword() },
                 fontFamily = Pixel
             )
 
-            // Error message
             errorMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    fontFamily = Pixel
-                )
+                Text(it, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp), fontFamily = Pixel)
             }
 
+            // ── Login button ──────────────────────────────────
             Button(
                 onClick = {
-                    if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Please fill all fields"
-                        return@Button
-                    }
-                    if (!email.isValidEmail()) {
-                        errorMessage = "Please enter a valid email address"
-                        return@Button
-                    }
-
-                    isLoading = true
-                    errorMessage = null
-
+                    if (email.isBlank() || password.isBlank()) { errorMessage = "Please fill all fields"; return@Button }
+                    if (!email.isValidEmail()) { errorMessage = "Please enter a valid email address"; return@Button }
+                    isLoading = true; errorMessage = null
                     scope.launch {
                         val result = FirebaseManager.loginUser(email, password)
                         isLoading = false
                         result
-                            .onSuccess { onLoginSuccess() }
+                            .onSuccess { uid ->
+                                SessionManager.saveOnlineSession(context, uid)
+                                onLoginSuccess()
+                            }
                             .onFailure { e -> errorMessage = e.message }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = BlackBoardYellow,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Login", fontFamily = Pixel, color = BlackBoardYellow)
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = BlackBoardYellow, strokeWidth = 2.dp)
+                else Text("Login", fontFamily = Pixel, color = BlackBoardYellow)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Play Offline button ───────────────────────────
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        SessionManager.saveOfflineSession(context)
+                        onPlayOffline()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("Play Offline", fontFamily = Pixel, color = BlackBoardYellow)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Don't have an account?",
-                fontFamily = Pixel,
-                color = BlackBoardYellow
-            )
-
+            Text("Don't have an account?", fontFamily = Pixel, color = BlackBoardYellow)
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Sign Up",
                 color = BlackBoardYellow,
@@ -261,12 +304,15 @@ fun LoginScreen(
     }
 }
 
-
+// ─────────────────────────────────────────────────────────────
+// 2. Sign Up Screen
+// ─────────────────────────────────────────────────────────────
 @Composable
 fun SignUpScreen(
     onNavigateToLogin: () -> Unit,
     onSignUpSuccess: () -> Unit
 ) {
+    val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -277,9 +323,7 @@ fun SignUpScreen(
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -287,119 +331,71 @@ fun SignUpScreen(
                 text = "Create Your Account",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 32.dp),
-                color = BlackBoardYellow,
-                fontFamily = Pixel
+                color = BlackBoardYellow, fontFamily = Pixel
             )
 
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = username, onValueChange = { username = it },
                 label = { Text("Username", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true
             )
 
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = email, onValueChange = { email = it },
                 label = { Text("Email", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password", fontFamily = Pixel) },
-                supportingText = { Text("Min. 8 characters, at least 1 number", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+            PasswordField(
+                value = password, onValueChange = { password = it },
+                label = "Password",
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                supportingText = { Text("Min. 8 characters, at least 1 number", fontFamily = Pixel) }
             )
 
-            OutlinedTextField(
-                value = reEnteredPassword,
-                onValueChange = { reEnteredPassword = it },
-                label = { Text("Re-enter Password", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+            PasswordField(
+                value = reEnteredPassword, onValueChange = { reEnteredPassword = it },
+                label = "Re-enter Password",
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
             )
 
             errorMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    fontFamily = Pixel
-                )
+                Text(it, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp), fontFamily = Pixel)
             }
 
             Button(
                 onClick = {
-                    if (username.isBlank() || email.isBlank() || password.isBlank()) {
-                        errorMessage = "Please fill all fields"
-                        return@Button
-                    }
-                    if (!email.isValidEmail()) {
-                        errorMessage = "Please enter a valid email address"
-                        return@Button
-                    }
-                    if (!password.isStrongPassword()) {
-                        errorMessage = "Password must be at least 8 characters and include a number"
-                        return@Button
-                    }
-                    if (password != reEnteredPassword) {
-                        errorMessage = "Passwords do not match"
-                        return@Button
-                    }
-
-                    isLoading = true
-                    errorMessage = null
-
+                    if (username.isBlank() || email.isBlank() || password.isBlank()) { errorMessage = "Please fill all fields"; return@Button }
+                    if (!email.isValidEmail()) { errorMessage = "Please enter a valid email address"; return@Button }
+                    if (!password.isStrongPassword()) { errorMessage = "Password must be at least 8 characters and include a number"; return@Button }
+                    if (password != reEnteredPassword) { errorMessage = "Passwords do not match"; return@Button }
+                    isLoading = true; errorMessage = null
                     scope.launch {
                         val result = FirebaseManager.signUpUser(username, email, password)
                         isLoading = false
                         result
-                            .onSuccess { onSignUpSuccess() }
+                            .onSuccess {
+                                // Save session right after sign-up
+                                val uid = Firebase.auth.currentUser?.uid ?: ""
+                                SessionManager.saveOnlineSession(context, uid)
+                                onSignUpSuccess()
+                            }
                             .onFailure { e -> errorMessage = e.message }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = BlackBoardYellow,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Create Account", fontFamily = Pixel, color = BlackBoardYellow)
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = BlackBoardYellow, strokeWidth = 2.dp)
+                else Text("Create Account", fontFamily = Pixel, color = BlackBoardYellow)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Already have an account?",
-                fontFamily = Pixel,
-                color = BlackBoardYellow
-            )
-
+            Text("Already have an account?", fontFamily = Pixel, color = BlackBoardYellow)
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Log In",
                 color = BlackBoardYellow,
@@ -410,29 +406,20 @@ fun SignUpScreen(
     }
 }
 
-
-
 // ─────────────────────────────────────────────────────────────
 // 3. Forgot Password Screen
 // ─────────────────────────────────────────────────────────────
 @Composable
-fun ForgotPasswordScreen(
-    onNavigateToLogin: () -> Unit
-) {
+fun ForgotPasswordScreen(onNavigateToLogin: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -440,63 +427,31 @@ fun ForgotPasswordScreen(
                 text = "Forgot Password?",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 8.dp),
-                fontFamily = Pixel,
-                color = BlackBoardYellow
+                fontFamily = Pixel, color = BlackBoardYellow
             )
-
             Text(
                 text = "Enter your email and we'll send you a reset link.",
-                fontFamily = Pixel,
-                color = BlackBoardYellow.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                fontSize = 13.sp,
+                fontFamily = Pixel, color = BlackBoardYellow.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center, fontSize = 13.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Only needs email now — no new password entered here (Firebase handles that)
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = email, onValueChange = { email = it },
                 label = { Text("Enter your Email", fontFamily = Pixel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    fontFamily = Pixel
-                )
-            }
-
-            successMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Green,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    fontFamily = Pixel
-                )
-            }
+            errorMessage?.let { Text(it, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp), fontFamily = Pixel) }
+            successMessage?.let { Text(it, color = Color.Green, modifier = Modifier.padding(bottom = 8.dp), fontFamily = Pixel) }
 
             Button(
                 onClick = {
-                    if (email.isBlank()) {
-                        errorMessage = "Please enter your email"
-                        return@Button
-                    }
-                    if (!email.isValidEmail()) {
-                        errorMessage = "Please enter a valid email address"
-                        return@Button
-                    }
-
-                    isLoading = true
-                    errorMessage = null
-
+                    if (email.isBlank()) { errorMessage = "Please enter your email"; return@Button }
+                    if (!email.isValidEmail()) { errorMessage = "Please enter a valid email address"; return@Button }
+                    isLoading = true; errorMessage = null
                     scope.launch {
                         val result = FirebaseManager.sendPasswordResetEmail(email)
                         isLoading = false
@@ -504,40 +459,21 @@ fun ForgotPasswordScreen(
                             successMessage = "Reset link sent! Check your inbox."
                             delay(2500)
                             onNavigateToLogin()
-                        }.onFailure { e ->
-                            errorMessage = e.message
-                        }
+                        }.onFailure { e -> errorMessage = e.message }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = !isLoading
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = BlackBoardYellow,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Send Reset Link", fontFamily = Pixel, color = BlackBoardYellow)
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = BlackBoardYellow, strokeWidth = 2.dp)
+                else Text("Send Reset Link", fontFamily = Pixel, color = BlackBoardYellow)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Remembered your password?",
-                fontFamily = Pixel,
-                color = BlackBoardYellow
-            )
-
+            Text("Remembered your password?", fontFamily = Pixel, color = BlackBoardYellow)
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "Log In",
-                color = BlackBoardYellow,
+                text = "Log In", color = BlackBoardYellow,
                 modifier = Modifier.clickableNoRipple { onNavigateToLogin() },
                 fontFamily = Pixel
             )

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -39,7 +41,8 @@ fun menu(
     onStartGameClick: () -> Unit,
     onMultiplayerGameClick: () -> Unit,
     onTutorialClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -95,6 +98,11 @@ fun menu(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
+        Button(onClick = onSettingsClick) {
+            Text("Settings", fontFamily = Pixel)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
         Button(onClick = onAboutClick) {
             Text("About", fontFamily = Pixel)
         }
@@ -117,6 +125,13 @@ fun AboutScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // ── Logo ──────────────────────────────────────────────
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Math Card Mania Logo",
+            modifier = Modifier.size(80.dp),
+            contentScale = ContentScale.Fit
+        )
+
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
@@ -186,6 +201,7 @@ fun MultiplayerSelectScreen(
     onNavigateToMenu: () -> Unit,
     onNavigateToLocal: () -> Unit,
     onNavigateToOnline: () -> Unit,
+    isOfflineMode: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -207,10 +223,21 @@ fun MultiplayerSelectScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onNavigateToOnline) {
-            Text("Online Multiplayer", fontFamily = Pixel, color = BlackBoardYellow)
+        if (!isOfflineMode) {
+            Button(onClick = onNavigateToOnline) {
+                Text("Online Multiplayer", fontFamily = Pixel, color = BlackBoardYellow)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            Text(
+                text = "Online Multiplayer unavailable\n(playing offline)",
+                fontFamily = Pixel,
+                color = BlackBoardYellow.copy(alpha = 0.4f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontSize = 13.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onNavigateToMenu) {
             Text("Return to Menu", fontFamily = Pixel, color = BlackBoardYellow)
