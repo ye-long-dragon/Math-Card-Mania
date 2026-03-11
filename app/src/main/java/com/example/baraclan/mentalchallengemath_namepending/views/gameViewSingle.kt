@@ -2,6 +2,10 @@ package com.example.baraclan.mentalchallengemath_namepending.views
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.baraclan.mentalchallengemath_namepending.models.*
 import com.example.baraclan.mentalchallengemath_namepending.scripts.RandomHand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.formatDouble
@@ -55,6 +60,8 @@ fun GameView(
     var showSettings by remember { mutableStateOf(false) }
     // Snapshot initialDeck ONCE before any RandomHand mutates it
     val deckSnapshot = remember { initialDeck.getAllCardsWithCounts().toMap() }
+    // Variables: x/y/z set once per game, a/b/c/d reset each goal
+    var variableState by remember { mutableStateOf(VariableState.newGame()) }
     var gameDeckState by remember { mutableStateOf(deck("Game Deck Copy")) }
     var playerHandState by remember { mutableStateOf(hand("Player's Current Hand")) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
@@ -74,11 +81,15 @@ fun GameView(
 
     fun safeEvaluate(cards: List<cardGame>): Double? =
         if (cards.isEmpty()) null
-        else try { PemdasEvaluator.evaluate(cards) } catch (e: Exception) { null }
+        else try {
+            val resolved = cards.map { variableState.resolve(it) }
+            PemdasEvaluator.evaluate(resolved)
+        } catch (e: Exception) { null }
 
     val equationResult = derivedStateOf { safeEvaluate(equationCards) }
 
     val startNewRound: () -> Unit = {
+        variableState = variableState.newGoal()
         gameDeckState = deck(initialDeck.name, deckSnapshot)
         playerHandState = RandomHand(gameDeckState)
         equationCards.clear()
@@ -119,7 +130,19 @@ fun GameView(
     val onHandCardClick: (cardGame) -> Unit = { clickedCard ->
         if (draggedCard != null && dragSource == "hand") {
             moveCardToEquation(draggedCard!!); draggedCard = null; dragSource = null
-        } else moveCardToEquation(clickedCard)
+        } else {
+            moveCardToEquation(clickedCard)
+            // Auto-add matching right paren to hand when left paren is placed
+            if (clickedCard.isLeftParen()) {
+                val rightParen = cardGame(
+                    id = java.util.UUID.randomUUID().toString(),
+                    name = ")",
+                    type = cardType.PARENTHESIS,
+                    operator = Operator.RIGHT_PAREN
+                )
+                playerHandState.addCard(rightParen, 1)
+            }
+        }
         SoundManager.playPlace()
     }
     val onHandCardLongPress: (cardGame) -> Unit = { card ->
@@ -161,8 +184,16 @@ fun GameView(
         )
     }
 
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = statusBarPadding.calculateTopPadding(),
+                bottom = navBarPadding.calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -213,7 +244,16 @@ fun GameView(
         // ── Current goal ──────────────────────────────────────
         goal(goalsToUse.subList(currentGoalIndex, goalsToUse.size))
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = variableState.displayString(),
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 10.sp,
+            color = BlackBoardYellow.copy(alpha = 0.75f),
+            fontFamily = Pixel,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // ── Equation display ──────────────────────────────────
         Column(
@@ -272,7 +312,8 @@ fun GameView(
         ) {
             Button(onClick = {
                 try {
-                    val resultDouble = PemdasEvaluator.evaluate(equationCards)
+                    val resolved = equationCards.map { variableState.resolve(it) }
+                    val resultDouble = PemdasEvaluator.evaluate(resolved)
                     equationCards.forEach { cardBin.addCard(it, 1) }
                     equationCards.clear()
 

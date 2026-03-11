@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -21,15 +22,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -42,7 +48,7 @@ import com.example.baraclan.mentalchallengemath_namepending.ui.theme.*
 
 @Composable
 fun DeveloperFace(
-    icon: Int,       // e.g. R.drawable.dev_photo
+    icon: Int,
     name: String
 ) {
     Column(
@@ -123,6 +129,23 @@ public fun CardGameDisplay(
             cardType.FRACTION -> R.drawable.fraction
 
             cardType.EXPONENT -> R.drawable.exponent
+
+            cardType.VARIABLE -> when (card.operator) {
+                Operator.VAR_A -> R.drawable.a
+                Operator.VAR_B -> R.drawable.b
+                Operator.VAR_C -> R.drawable.c
+                Operator.VAR_D -> R.drawable.d
+                Operator.VAR_X -> R.drawable.x
+                Operator.VAR_Y -> R.drawable.y
+                Operator.VAR_Z -> R.drawable.z
+                else -> null
+            }
+
+            cardType.PARENTHESIS -> when (card.operator) {
+                Operator.LEFT_PAREN  -> R.drawable.left_parenthesis
+                Operator.RIGHT_PAREN -> R.drawable.right_parenthesis
+                else -> null
+            }
         }
     }
 

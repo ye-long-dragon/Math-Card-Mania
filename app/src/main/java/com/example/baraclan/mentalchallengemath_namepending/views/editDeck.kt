@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.example.baraclan.mentalchallengemath_namepending.data.DeckRepository
 import com.example.baraclan.mentalchallengemath_namepending.models.cardGame
 import com.example.baraclan.mentalchallengemath_namepending.models.collection
-import com.example.baraclan.mentalchallengemath_namepending.models.deck
+import com.example.baraclan.mentalchallengemath_namepending.models.*
 import com.example.baraclan.mentalchallengemath_namepending.ui.theme.BlackBoardYellow
 import kotlinx.coroutines.launch
 
@@ -23,14 +23,31 @@ fun EditDeckScreen(
     collection: collection,
     onReturnMenu: () -> Unit = {},
     onDeckCardClick: (cardGame) -> Unit = {},
-    onCollectionCardClick: (cardGame) -> Unit = {},
+    onCollectionCardClick: (cardGame) -> Unit = {}
 ) {
     val cardCount = cardDeck.getTotalCount()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var saveStatus by remember { mutableStateOf<String?>(null) }
-    val isOverLimit = cardCount > 20
+
+    // ── Deck validation rules ─────────────────────────────────
+    // Max 30 cards, min 5 operators, min 1 of every variable letter
+    val allCards = cardDeck.getAllCardsAsList()
+    val isOverLimit  = cardCount > 30
+    val opCount      = allCards.count { it.type == cardType.OPERATOR }
+    val hasEnoughOps = opCount >= 5
+    val varOps = listOf(Operator.VAR_A, Operator.VAR_B, Operator.VAR_C, Operator.VAR_D,
+        Operator.VAR_X, Operator.VAR_Y, Operator.VAR_Z)
+    val missingVars  = varOps.filter { op -> allCards.none { it.type == cardType.VARIABLE && it.operator == op } }
+    val deckValid    = !isOverLimit && hasEnoughOps && missingVars.isEmpty()
+
+    val validationMsg: String? = when {
+        isOverLimit      -> "Too many cards! Max 30 (currently $cardCount)"
+        !hasEnoughOps    -> "Need at least 5 operator cards (have $opCount)"
+        missingVars.isNotEmpty() -> "Missing variables: ${missingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}"
+        else             -> null
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -50,8 +67,7 @@ fun EditDeckScreen(
 
         // ── Deck count (red if over limit) ────────────────────
         Text(
-            text = "Your Played Deck ($cardCount/20)" +
-                    if (isOverLimit) " — Too many cards!" else "",
+            text = "Your Played Deck ($cardCount/30)" + if (validationMsg != null) " ⚠" else " ✓",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
@@ -59,9 +75,23 @@ fun EditDeckScreen(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
-                color = if (isOverLimit) MaterialTheme.colorScheme.error else BlackBoardYellow
+                color = if (validationMsg != null) MaterialTheme.colorScheme.error else BlackBoardYellow
             )
         )
+
+        // ── Validation hint ───────────────────────────────────
+        if (validationMsg != null) {
+            Text(
+                text = validationMsg!!,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = Pixel,
+                    textAlign = TextAlign.Center,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            )
+        }
 
         // ── Deck horizontal scroll ────────────────────────────
         DeckHorizontalScroll(
@@ -134,8 +164,8 @@ fun EditDeckScreen(
             // Save deck button
             Button(
                 onClick = {
-                    if (isOverLimit) {
-                        saveStatus = "Deck has too many cards (max 20)"
+                    if (validationMsg != null) {
+                        saveStatus = validationMsg
                         return@Button
                     }
                     scope.launch {
@@ -148,7 +178,7 @@ fun EditDeckScreen(
                     }
                 },
                 modifier = Modifier.weight(1f),
-                enabled = !isOverLimit
+                enabled = deckValid
             ) {
                 Text(
                     "Save Deck",

@@ -6,25 +6,20 @@ import kotlin.math.*
 // ─────────────────────────────────────────────────────────────
 // PemdasEvaluator
 //
-// Supported card layout:
-//
-//   NUMBER / CONSTANT                    → bare value
-//   FUNCTION  <slot>                     → sin/cos/ln/log10 of slot
-//   FRACTION  <slot>  <slot>             → slot / slot
-//   EXPONENT  <slot>  <slot>             → slot ^ slot
-//   OPERATOR                             → +  −  ×  ÷  (infix PEMDAS)
-//
-// A <slot> can itself be a nested FUNCTION, FRACTION, or EXPONENT,
-// so FRACTION → 5 → EXPONENT → 2 → 3  correctly yields 5 / 2^3 = 0.625
-//
-// Returns Double.
+// NUMBER + NUMBER adjacent        → concatenate digits (1,2 = 12)
+// NUMBER + VARIABLE/CONSTANT      → multiply (12,a = 12×a)
+// VARIABLE/CONSTANT + anything    → multiply (a,b = a×b)
+// Value + (                       → multiply (3,(x+1) = 3×(x+1))
+// ) + Value                       → multiply
 // ─────────────────────────────────────────────────────────────
 object PemdasEvaluator {
 
-    // ── Token types used internally ───────────────────────────
     private sealed class Token {
-        data class Value(val v: Double) : Token()
+        // isLiteral = came from a NUMBER card (single digit)
+        data class Value(val v: Double, val isLiteral: Boolean = false) : Token()
         data class BinOp(val op: Operator) : Token()
+        object LParen : Token()
+        object RParen : Token()
     }
 
     private fun precedence(op: Operator): Int = when (op) {
@@ -50,99 +45,80 @@ object PemdasEvaluator {
     }
 
     // ─────────────────────────────────────────────────────────
-    // Main entry point
-    // ─────────────────────────────────────────────────────────
     fun evaluate(expressionCards: List<cardGame>): Double {
         require(expressionCards.isNotEmpty()) { "Expression is empty." }
-        val tokens = resolveToTokens(expressionCards)
-        val postfix = toPostfix(tokens)
+        val raw      = resolveToTokens(expressionCards)
+        val combined = collapseAndImplicit(raw)
+        val postfix  = toPostfix(combined)
         return evalPostfix(postfix)
     }
 
     // ─────────────────────────────────────────────────────────
-    // resolveSlot — consumes one "value slot" starting at index i.
-    // A slot is:
-    //   • a plain value card (NUMBER or CONSTANT)
-    //   • a FUNCTION card followed by one slot
-    //   • a FRACTION or EXPONENT card followed by two slots
-    // Returns Pair(resolvedDouble, nextIndex).
+    // resolveSlot — recursively resolves one value-producing slot.
+    // Returns (resolvedDouble, nextIndex).
     // ─────────────────────────────────────────────────────────
     private fun resolveSlot(cards: List<cardGame>, i: Int): Pair<Double, Int> {
-        require(i < cards.size) { "Expected a value or compound card but reached end of expression." }
+        require(i < cards.size) { "Expected a value but reached end of expression." }
         val card = cards[i]
-
         return when {
-            // Plain value
             card.isValue() -> {
                 val v = card.resolvedValue()
-                    ?: throw IllegalArgumentException("Card '${card.name}' has no value.")
+                    ?: throw IllegalArgumentException("'${card.name}' has no resolved value (inject VariableState first).")
                 Pair(v, i + 1)
             }
-
-            // FUNCTION <slot>
             card.isPrefixFunction() -> {
                 val (arg, next) = resolveSlot(cards, i + 1)
-                val result = applyFunction(card.operator!!, arg)
-                Pair(result, next)
+                Pair(applyFunction(card.operator!!, arg), next)
             }
-
-            // FRACTION <slot> <slot>  →  slot1 / slot2
             card.type == cardType.FRACTION -> {
-                val (num, afterNum) = resolveSlot(cards, i + 1)
-                val (den, afterDen) = resolveSlot(cards, afterNum)
-                require(den != 0.0) { "Fraction denominator cannot be zero." }
-                Pair(num / den, afterDen)
+                val (num, a2) = resolveSlot(cards, i + 1)
+                val (den, a3) = resolveSlot(cards, a2)
+                require(den != 0.0) { "Fraction denominator is zero." }
+                Pair(num / den, a3)
             }
-
-            // EXPONENT <slot> <slot>  →  slot1 ^ slot2
             card.type == cardType.EXPONENT -> {
-                val (base, afterBase) = resolveSlot(cards, i + 1)
-                val (exp, afterExp)   = resolveSlot(cards, afterBase)
-                Pair(base.pow(exp), afterExp)
+                val (base, a2) = resolveSlot(cards, i + 1)
+                val (exp,  a3) = resolveSlot(cards, a2)
+                Pair(base.pow(exp), a3)
             }
-
             else -> throw IllegalArgumentException(
-                "Expected a value/function/fraction/exponent card at position $i, got '${card.type}'."
+                "Expected value/function/fraction/exponent at position $i, got '${card.type}'."
             )
         }
     }
 
     // ─────────────────────────────────────────────────────────
-    // resolveToTokens — walk top-level cards into flat Token list.
-    // Compound cards (FUNCTION/FRACTION/EXPONENT) are fully consumed
-    // by resolveSlot and emitted as a single Token.Value.
-    // Binary operators become Token.BinOp.
+    // resolveToTokens — walks the top-level card list into a
+    // flat token stream, tagging NUMBER-sourced values as literals.
     // ─────────────────────────────────────────────────────────
     private fun resolveToTokens(cards: List<cardGame>): List<Token> {
         val tokens = mutableListOf<Token>()
         var i = 0
-
         while (i < cards.size) {
             val card = cards[i]
-
             when {
-                // Value / compound → resolve the full slot
+                card.isLeftParen()  -> { tokens.add(Token.LParen); i++ }
+                card.isRightParen() -> { tokens.add(Token.RParen); i++ }
+
+                // Compound/value slots
                 card.isValue() || card.isPrefixFunction() ||
                         card.type == cardType.FRACTION || card.type == cardType.EXPONENT -> {
                     val (v, next) = resolveSlot(cards, i)
-                    tokens.add(Token.Value(v))
+                    // Only single NUMBER cards are literals; functions/fractions/exponents are not
+                    val isLit = card.type == cardType.NUMBER
+                    tokens.add(Token.Value(v, isLiteral = isLit))
                     i = next
                 }
 
-                // Binary operators
                 card.isBinaryOperator() -> {
                     val op = card.operator!!
-
-                    // Unary +/− at start or after another operator
                     val isUnary = (op == Operator.ADD || op == Operator.SUBTRACT) &&
-                            (tokens.isEmpty() || tokens.last() is Token.BinOp)
-
+                            (tokens.isEmpty() || tokens.last() is Token.BinOp || tokens.last() is Token.LParen)
                     if (isUnary) {
-                        require(i + 1 < cards.size) { "Unary operator at end of expression." }
-                        // The operand of a unary op may itself be a compound slot
                         val (v, next) = resolveSlot(cards, i + 1)
+                        val nextIsLit = cards[i + 1].type == cardType.NUMBER
                         val signed = if (op == Operator.SUBTRACT) -v else v
-                        tokens.add(Token.Value(signed))
+                        tokens.add(Token.Value(signed, isLiteral = nextIsLit))
                         i = next
                     } else {
                         tokens.add(Token.BinOp(op))
@@ -151,34 +127,100 @@ object PemdasEvaluator {
                 }
 
                 else -> throw IllegalArgumentException(
-                    "Unexpected card type '${card.type}' for card '${card.name}'."
+                    "Unexpected card type '${card.type}' at position $i."
                 )
             }
         }
-
         return tokens
     }
 
-    // ── Shunting-yard → postfix ───────────────────────────────
+    // ─────────────────────────────────────────────────────────
+    // collapseAndImplicit
+    //
+    // Pass 1 — collapse runs of adjacent NUMBER literals into one:
+    //   [1,isLit] [2,isLit] → [12,isLit]
+    //
+    // Pass 2 — insert implicit × where needed:
+    //   literal + non-literal value  → × (12a)
+    //   non-literal + any value      → × (ab, a2)
+    //   value + LParen               → × (3(x+1))
+    //   RParen + value               → × ((x+1)3)
+    //   RParen + LParen              → × ((a)(b))
+    // ─────────────────────────────────────────────────────────
+    private fun collapseAndImplicit(tokens: List<Token>): List<Token> {
+        // Pass 1 — collapse adjacent literals
+        val collapsed = mutableListOf<Token>()
+        var i = 0
+        while (i < tokens.size) {
+            val t = tokens[i]
+            if (t is Token.Value && t.isLiteral) {
+                var digits = t.v.toLong().toString()
+                var j = i + 1
+                while (j < tokens.size) {
+                    val n = tokens[j]
+                    if (n is Token.Value && n.isLiteral) { digits += n.v.toLong().toString(); j++ }
+                    else break
+                }
+                collapsed.add(Token.Value(digits.toDouble(), isLiteral = true))
+                i = j
+            } else { collapsed.add(t); i++ }
+        }
+
+        // Pass 2 — implicit multiply
+        val result = mutableListOf<Token>()
+        for (k in collapsed.indices) {
+            result.add(collapsed[k])
+            if (k < collapsed.size - 1) {
+                val cur  = collapsed[k]
+                val next = collapsed[k + 1]
+                val mul = when {
+                    cur is Token.Value && cur.isLiteral  && next is Token.Value && !next.isLiteral -> true
+                    cur is Token.Value && !cur.isLiteral && next is Token.Value                   -> true
+                    cur is Token.Value                   && next is Token.LParen                  -> true
+                    cur is Token.RParen                  && next is Token.Value                   -> true
+                    cur is Token.RParen                  && next is Token.LParen                  -> true
+                    else -> false
+                }
+                if (mul) result.add(Token.BinOp(Operator.MULTIPLY))
+            }
+        }
+        return result
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Shunting-yard → postfix (handles parens)
+    // ─────────────────────────────────────────────────────────
     private fun toPostfix(tokens: List<Token>): List<Token> {
         val output  = mutableListOf<Token>()
-        val opStack = Stack<Token.BinOp>()
+        val opStack = Stack<Token>()
         for (token in tokens) {
             when (token) {
-                is Token.Value -> output.add(token)
+                is Token.Value  -> output.add(token)
+                is Token.LParen -> opStack.push(token)
+                is Token.RParen -> {
+                    while (opStack.isNotEmpty() && opStack.peek() !is Token.LParen)
+                        output.add(opStack.pop())
+                    require(opStack.isNotEmpty()) { "Mismatched parentheses." }
+                    opStack.pop()
+                }
                 is Token.BinOp -> {
                     while (opStack.isNotEmpty() &&
-                        precedence(opStack.peek().op) >= precedence(token.op))
+                        opStack.peek() is Token.BinOp &&
+                        precedence((opStack.peek() as Token.BinOp).op) >= precedence(token.op))
                         output.add(opStack.pop())
                     opStack.push(token)
                 }
             }
         }
-        while (opStack.isNotEmpty()) output.add(opStack.pop())
+        while (opStack.isNotEmpty()) {
+            val top = opStack.pop()
+            require(top !is Token.LParen) { "Mismatched parentheses." }
+            output.add(top)
+        }
         return output
     }
 
-    // ── Evaluate postfix ──────────────────────────────────────
+    // ─────────────────────────────────────────────────────────
     private fun evalPostfix(tokens: List<Token>): Double {
         val stack = Stack<Double>()
         for (token in tokens) {
@@ -189,6 +231,7 @@ object PemdasEvaluator {
                     val b = stack.pop(); val a = stack.pop()
                     stack.push(applyBinary(token.op, a, b))
                 }
+                else -> {}
             }
         }
         require(stack.size == 1) { "Invalid expression: leftover values." }
@@ -198,6 +241,6 @@ object PemdasEvaluator {
     fun evaluateRounded(expressionCards: List<cardGame>, decimals: Int = 4): Double {
         val result = evaluate(expressionCards)
         val factor = 10.0.pow(decimals)
-        return round(result * factor) / factor
+        return kotlin.math.round(result * factor) / factor
     }
 }

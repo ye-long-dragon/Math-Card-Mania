@@ -1,6 +1,10 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -18,6 +22,7 @@ import com.example.baraclan.mentalchallengemath_namepending.models.deck
 import com.example.baraclan.mentalchallengemath_namepending.models.hand
 import com.example.baraclan.mentalchallengemath_namepending.models.Difficulty
 import com.example.baraclan.mentalchallengemath_namepending.models.GoalGenerator
+import com.example.baraclan.mentalchallengemath_namepending.models.VariableState
 import com.example.baraclan.mentalchallengemath_namepending.models.collection
 import com.example.baraclan.mentalchallengemath_namepending.scripts.RandomHand
 import com.example.baraclan.mentalchallengemath_namepending.scripts.evaluateEquation
@@ -295,6 +300,7 @@ fun HalfScreen(
     var currentGoalIndex by remember { mutableStateOf(0) }
     var gameFinished by remember { mutableStateOf(false) }
     val deckSnapshot = remember { initialDeck.getAllCardsWithCounts().toMap() }
+    var variableState by remember { mutableStateOf(VariableState.newGame()) }
     var gameDeckState by remember { mutableStateOf(deck("Game Deck Copy")) }
     var playerHandState by remember { mutableStateOf(hand("Player's Current Hand")) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
@@ -303,6 +309,7 @@ fun HalfScreen(
 
     val startNewRound: () -> Unit = {
         if (currentGoalIndex < gameGoals.size) {
+            variableState = variableState.newGoal()
             gameDeckState = deck(initialDeck.name, deckSnapshot)
             playerHandState = RandomHand(gameDeckState)
             equationCards.clear()
@@ -398,7 +405,7 @@ fun HalfScreen(
         ) {
             Button(
                 onClick = {
-                    val equationResult: Double? = evaluateEquation(equationCards)
+                    val equationResult: Double? = evaluateEquation(equationCards.map { variableState.resolve(it) })
                     val currentTargetGoal = gameGoals[currentGoalIndex]
                     val round = (currentGoalIndex + 1).coerceIn(1, 10)
                     val margin = when {

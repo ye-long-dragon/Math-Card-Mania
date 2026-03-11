@@ -155,6 +155,17 @@ object DeckRepository {
                 // Special two-slot cards
                 cardName == "Fraction" -> cardGame(id = cardName, name = cardName, type = cardType.FRACTION, operator = Operator.FRACTION)
                 cardName == "Exponent" -> cardGame(id = cardName, name = cardName, type = cardType.EXPONENT, operator = Operator.POWER)
+                // Variables
+                cardName == "a" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_A)
+                cardName == "b" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_B)
+                cardName == "c" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_C)
+                cardName == "d" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_D)
+                cardName == "x" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_X)
+                cardName == "y" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_Y)
+                cardName == "z" -> cardGame(id = cardName, name = cardName, type = cardType.VARIABLE, operator = Operator.VAR_Z)
+                // Parentheses
+                cardName == "(" -> cardGame(id = cardName, name = cardName, type = cardType.PARENTHESIS, operator = Operator.LEFT_PAREN)
+                cardName == ")" -> cardGame(id = cardName, name = cardName, type = cardType.PARENTHESIS, operator = Operator.RIGHT_PAREN)
                 else -> null
             }
         } catch (e: Exception) {

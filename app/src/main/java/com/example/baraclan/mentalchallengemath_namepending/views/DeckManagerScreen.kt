@@ -30,8 +30,6 @@ import java.util.UUID
 
 const val MAX_DECKS = 8
 
-
-
 // ─────────────────────────────────────────────────────────────
 // DeckManagerScreen
 // Shows all saved decks. Tap to edit, long-press to select,
@@ -142,7 +140,7 @@ fun DeckManagerScreen(
                             inSelectionMode = false
                             selectedForDelete = emptySet()
                         }) {
-                            Text("Cancel", fontFamily =Pixel, color = BlackBoardYellow)
+                            Text("Cancel", fontFamily = Pixel, color = BlackBoardYellow)
                         }
                     }
                 }
@@ -232,11 +230,24 @@ fun DeckManagerScreen(
                 ) {
                     items(savedDecks, key = { it.name }) { d ->
                         val isSelected = d.name in selectedForDelete
+                        // Compute deck validation warning inline
+                        val dCards = d.getAllCardsAsList()
+                        val dOpCount = dCards.count { it.type == cardType.OPERATOR }
+                        val dVarOps = listOf(Operator.VAR_A, Operator.VAR_B, Operator.VAR_C, Operator.VAR_D,
+                            Operator.VAR_X, Operator.VAR_Y, Operator.VAR_Z)
+                        val dMissingVars = dVarOps.filter { op -> dCards.none { it.type == cardType.VARIABLE && it.operator == op } }
+                        val dWarning: String? = when {
+                            d.getTotalCount() > 30      -> "Too many cards (max 30)"
+                            dOpCount < 5                -> "Need ≥5 operators (have $dOpCount)"
+                            dMissingVars.isNotEmpty()   -> "Missing: ${dMissingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}"
+                            else                        -> null
+                        }
                         DeckManagerTile(
                             deckName = d.name,
                             cardCount = d.getTotalCount(),
                             isSelected = isSelected,
                             inSelectionMode = inSelectionMode,
+                            validationWarning = dWarning,
                             onClick = {
                                 if (inSelectionMode) {
                                     selectedForDelete = if (isSelected)
@@ -275,13 +286,18 @@ fun DeckManagerTile(
     isSelected: Boolean,
     inSelectionMode: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    validationWarning: String? = null
 ) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+    val borderColor = when {
+        isSelected -> MaterialTheme.colorScheme.primary
+        validationWarning != null -> MaterialTheme.colorScheme.error
+        else -> Color.Transparent
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
+            .heightIn(min = 72.dp)
             .border(2.dp, borderColor, RoundedCornerShape(12.dp))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(12.dp),
@@ -309,10 +325,10 @@ fun DeckManagerTile(
                         color = Color.Black
                     )
                     Text(
-                        text = "$cardCount / 20 cards",
+                        text = "$cardCount / 30 cards",
                         fontFamily = Pixel,
                         fontSize = 12.sp,
-                        color = if (cardCount > 20) MaterialTheme.colorScheme.error else Color.DarkGray
+                        color = if (cardCount > 30) MaterialTheme.colorScheme.error else Color.DarkGray
                     )
                 }
                 if (!inSelectionMode) {

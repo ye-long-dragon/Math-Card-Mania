@@ -18,6 +18,19 @@ enum class Operator {
     EULER,
 
     // Two-slot special cards
-    POWER,      // x ^ y  — base and exponent are separate number cards placed after
-    FRACTION    // x / y  — numerator and denominator are separate number cards placed after
+    POWER,      // x ^ y
+    FRACTION,   // x / y
+
+    // Variables — a,b,c,d reset each goal; x,y,z set once per game
+    VAR_A,
+    VAR_B,
+    VAR_C,
+    VAR_D,
+    VAR_X,
+    VAR_Y,
+    VAR_Z,
+
+    // Parentheses
+    LEFT_PAREN,
+    RIGHT_PAREN
 }

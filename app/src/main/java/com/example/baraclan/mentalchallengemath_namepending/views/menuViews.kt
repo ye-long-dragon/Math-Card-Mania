@@ -1,13 +1,11 @@
 package com.example.baraclan.mentalchallengemath_namepending.views
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
@@ -44,72 +42,66 @@ fun menu(
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
-    Column(
+    val navBot    = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(top = statusTop, bottom = navBot)
     ) {
-        // ── Logo ──────────────────────────────────────────────
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Math Card Mania Logo",
-            modifier = Modifier.size(120.dp),
-            contentScale = ContentScale.Fit
-        )
+        val screenH = maxHeight
+        // Scale spacing and logo to available height
+        val logoSize   = (screenH * 0.12f).coerceIn(60.dp, 110.dp)
+        val btnSpacing = (screenH * 0.012f).coerceIn(4.dp, 14.dp)
+        val titleSize  = (screenH.value * 0.045f).coerceIn(18f, 32f)
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // ── Logo ──────────────────────────────────────────
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Math Card Mania Logo",
+                modifier = Modifier.size(logoSize),
+                contentScale = ContentScale.Fit
+            )
 
-        // ── App name ──────────────────────────────────────────
-        Text(
-            text = "Math Card Mania",
-            style = MaterialTheme.typography.headlineLarge,
-            fontFamily = Pixel,
-            color = BlackBoardYellow,
-            textAlign = TextAlign.Center,
-            fontSize = 32.sp
-        )
+            Spacer(modifier = Modifier.height(btnSpacing))
 
-        Spacer(modifier = Modifier.height(32.dp))
+            // ── App name ──────────────────────────────────────
+            Text(
+                text = "Math Card Mania",
+                style = MaterialTheme.typography.headlineLarge,
+                fontFamily = Pixel,
+                color = BlackBoardYellow,
+                textAlign = TextAlign.Center,
+                fontSize = titleSize.sp
+            )
 
-        Button(onClick = onStartGameClick) {
-            Text("Start Game", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(btnSpacing * 2))
 
-        Button(onClick = onMultiplayerGameClick) {
-            Text("Multiplayer", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onTutorialClick) {
-            Text("Tutorial", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onEditDeckClick) {
-            Text("Edit Deck", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onProfileClick) {
-            Text("Profile", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onSettingsClick) {
-            Text("Settings", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onAboutClick) {
-            Text("About", fontFamily = Pixel)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onLogout) {
-            Text("Logout", fontFamily = Pixel)
+            Button(onClick = onStartGameClick,   modifier = Modifier.fillMaxWidth(0.6f)) { Text("Start Game",   fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onMultiplayerGameClick, modifier = Modifier.fillMaxWidth(0.6f)) { Text("Multiplayer", fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onTutorialClick,    modifier = Modifier.fillMaxWidth(0.6f)) { Text("Tutorial",     fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onEditDeckClick,    modifier = Modifier.fillMaxWidth(0.6f)) { Text("Edit Deck",    fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onProfileClick,     modifier = Modifier.fillMaxWidth(0.6f)) { Text("Profile",      fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onSettingsClick,    modifier = Modifier.fillMaxWidth(0.6f)) { Text("Settings",     fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onAboutClick,       modifier = Modifier.fillMaxWidth(0.6f)) { Text("About",        fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
+            Button(onClick = onLogout,           modifier = Modifier.fillMaxWidth(0.6f)) { Text("Logout",       fontFamily = Pixel) }
+            Spacer(modifier = Modifier.height(btnSpacing))
         }
     }
 }

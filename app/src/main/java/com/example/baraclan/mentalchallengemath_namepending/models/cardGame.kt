@@ -9,13 +9,15 @@ data class cardGame(
     // Used by NUMBER cards
     val numberValue: Int? = null,
 
-    // Used by OPERATOR, FUNCTION, CONSTANT, FRACTION, EXPONENT cards
+    // Used by OPERATOR, FUNCTION, CONSTANT, FRACTION, EXPONENT, VARIABLE, PARENTHESIS cards
     val operator: Operator? = null,
 
-    // Used by FRACTION and EXPONENT cards to hold their two input slots.
-    // These are filled in when the player places number cards into the slots.
-    val slotA: Double? = null,   // numerator / base
-    val slotB: Double? = null    // denominator / exponent
+    // Runtime-resolved value for VARIABLE cards (set by VariableState each goal/game)
+    val variableValue: Double? = null,
+
+    // Used by FRACTION and EXPONENT cards
+    val slotA: Double? = null,
+    val slotB: Double? = null
 ) {
     init {
         when (type) {
@@ -44,57 +46,88 @@ data class cardGame(
             cardType.EXPONENT -> require(operator == Operator.POWER && numberValue == null) {
                 "EXPONENT cards must use POWER operator."
             }
+
+            cardType.VARIABLE -> require(
+                operator in listOf(
+                    Operator.VAR_A, Operator.VAR_B, Operator.VAR_C, Operator.VAR_D,
+                    Operator.VAR_X, Operator.VAR_Y, Operator.VAR_Z
+                ) && numberValue == null
+            ) { "VARIABLE cards must use VAR_A..VAR_Z operators." }
+
+            cardType.PARENTHESIS -> require(
+                operator in listOf(Operator.LEFT_PAREN, Operator.RIGHT_PAREN)
+                        && numberValue == null
+            ) { "PARENTHESIS cards must use LEFT_PAREN or RIGHT_PAREN." }
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────
 
-    // Returns the numeric value this card resolves to (for CONSTANT, NUMBER).
-    // Returns null for cards that need context (OPERATOR, FUNCTION, FRACTION, EXPONENT).
+    // Returns the numeric value this card resolves to.
+    // VARIABLE resolves via variableValue (injected at game start/goal start).
     fun resolvedValue(): Double? = when (type) {
-        cardType.NUMBER -> numberValue?.toDouble()
+        cardType.NUMBER   -> numberValue?.toDouble()
         cardType.CONSTANT -> when (operator) {
-            Operator.PI -> Math.PI
+            Operator.PI    -> Math.PI
             Operator.EULER -> Math.E
             else -> null
         }
+        cardType.VARIABLE -> variableValue
         else -> null
     }
 
-    // Whether this card is a "value" (can appear where a number is expected)
-    fun isValue(): Boolean = type == cardType.NUMBER || type == cardType.CONSTANT
+    fun isValue(): Boolean =
+        type == cardType.NUMBER || type == cardType.CONSTANT || type == cardType.VARIABLE
 
-    // Whether this card is a binary infix operator (+, -, *, /)
     fun isBinaryOperator(): Boolean = type == cardType.OPERATOR
 
-    // Whether this card is a prefix function (sin, cos, ln, log10)
     fun isPrefixFunction(): Boolean = type == cardType.FUNCTION
 
-    // Whether this card needs two number cards after it (fraction/exponent)
     fun isTwoSlot(): Boolean = type == cardType.FRACTION || type == cardType.EXPONENT
 
-    override fun toString(): String = when (type) {
-        cardType.NUMBER -> "Number($numberValue)"
+    fun isLeftParen(): Boolean  = type == cardType.PARENTHESIS && operator == Operator.LEFT_PAREN
+    fun isRightParen(): Boolean = type == cardType.PARENTHESIS && operator == Operator.RIGHT_PAREN
+
+    // Display label used in equation string and card UI
+    fun displayLabel(): String = when (type) {
+        cardType.NUMBER   -> numberValue.toString()
         cardType.OPERATOR -> when (operator) {
-            Operator.ADD -> "+"
+            Operator.ADD      -> "+"
             Operator.SUBTRACT -> "−"
             Operator.MULTIPLY -> "×"
-            Operator.DIVIDE -> "÷"
+            Operator.DIVIDE   -> "÷"
             else -> "?"
         }
         cardType.FUNCTION -> when (operator) {
-            Operator.SIN -> "sin"
-            Operator.COS -> "cos"
-            Operator.LN -> "ln"
+            Operator.SIN   -> "sin"
+            Operator.COS   -> "cos"
+            Operator.LN    -> "ln"
             Operator.LOG10 -> "log₁₀"
             else -> "?"
         }
         cardType.CONSTANT -> when (operator) {
-            Operator.PI -> "π"
+            Operator.PI    -> "π"
             Operator.EULER -> "e"
             else -> "?"
         }
-        cardType.FRACTION -> "Fraction(${slotA ?: "?"}/${slotB ?: "?"})"
-        cardType.EXPONENT -> "Exp(${slotA ?: "?"}^${slotB ?: "?"})"
+        cardType.FRACTION    -> "Frac"
+        cardType.EXPONENT    -> "Exp"
+        cardType.VARIABLE    -> when (operator) {
+            Operator.VAR_A -> "a"
+            Operator.VAR_B -> "b"
+            Operator.VAR_C -> "c"
+            Operator.VAR_D -> "d"
+            Operator.VAR_X -> "x"
+            Operator.VAR_Y -> "y"
+            Operator.VAR_Z -> "z"
+            else -> "?"
+        }
+        cardType.PARENTHESIS -> when (operator) {
+            Operator.LEFT_PAREN  -> "("
+            Operator.RIGHT_PAREN -> ")"
+            else -> "?"
+        }
     }
+
+    override fun toString(): String = displayLabel()
 }

@@ -125,7 +125,12 @@ fun initDeck(): deck {
         // Constants
         "pi" to 1, "euler" to 1,
         // Special two-slot cards
-        "fraction" to 1, "exponent" to 1
+        "fraction" to 1, "exponent" to 1,
+        // Variables
+        "var_a" to 1, "var_b" to 1, "var_c" to 1, "var_d" to 1,
+        "var_x" to 1, "var_y" to 1, "var_z" to 1,
+        // Parentheses
+        "left_paren" to 1, "right_paren" to 1
     )
     initialCardsConfig.forEach { (cardString, count) ->
         playerDeck.addCard(createCardFromConfig(cardString), count)
@@ -147,7 +152,12 @@ fun fullCollection(): collection {
         // Constants
         "pi" to 1, "euler" to 1,
         // Special two-slot cards
-        "fraction" to 1, "exponent" to 1
+        "fraction" to 1, "exponent" to 1,
+        // Variables
+        "var_a" to 1, "var_b" to 1, "var_c" to 1, "var_d" to 1,
+        "var_x" to 1, "var_y" to 1, "var_z" to 1,
+        // Parentheses
+        "left_paren" to 1, "right_paren" to 1
     )
     allPossibleCardConfigs.forEach { (cardString, count) ->
         availableCards.addCard(createCardFromConfig(cardString), count)
@@ -172,16 +182,27 @@ private fun createCardFromConfig(cardString: String): cardGame {
             }
         )
         // Functions
-        "sin"   -> cardGame(id = UUID.randomUUID().toString(), name = "sin",     type = cardType.FUNCTION, operator = Operator.SIN)
-        "cos"   -> cardGame(id = UUID.randomUUID().toString(), name = "cos",     type = cardType.FUNCTION, operator = Operator.COS)
-        "ln"    -> cardGame(id = UUID.randomUUID().toString(), name = "ln",      type = cardType.FUNCTION, operator = Operator.LN)
-        "log10" -> cardGame(id = UUID.randomUUID().toString(), name = "log10",   type = cardType.FUNCTION, operator = Operator.LOG10)
+        "sin"   -> cardGame(id = UUID.randomUUID().toString(), name = "sin",   type = cardType.FUNCTION,  operator = Operator.SIN)
+        "cos"   -> cardGame(id = UUID.randomUUID().toString(), name = "cos",   type = cardType.FUNCTION,  operator = Operator.COS)
+        "ln"    -> cardGame(id = UUID.randomUUID().toString(), name = "ln",    type = cardType.FUNCTION,  operator = Operator.LN)
+        "log10" -> cardGame(id = UUID.randomUUID().toString(), name = "log10", type = cardType.FUNCTION,  operator = Operator.LOG10)
         // Constants
-        "pi"    -> cardGame(id = UUID.randomUUID().toString(), name = "pi",      type = cardType.CONSTANT, operator = Operator.PI)
-        "euler" -> cardGame(id = UUID.randomUUID().toString(), name = "euler",   type = cardType.CONSTANT, operator = Operator.EULER)
+        "pi"    -> cardGame(id = UUID.randomUUID().toString(), name = "pi",    type = cardType.CONSTANT,  operator = Operator.PI)
+        "euler" -> cardGame(id = UUID.randomUUID().toString(), name = "euler", type = cardType.CONSTANT,  operator = Operator.EULER)
         // Special two-slot cards
-        "fraction" -> cardGame(id = UUID.randomUUID().toString(), name = "Fraction", type = cardType.FRACTION, operator = Operator.FRACTION)
-        "exponent" -> cardGame(id = UUID.randomUUID().toString(), name = "Exponent", type = cardType.EXPONENT, operator = Operator.POWER)
+        "fraction"   -> cardGame(id = UUID.randomUUID().toString(), name = "Fraction",    type = cardType.FRACTION,    operator = Operator.FRACTION)
+        "exponent"   -> cardGame(id = UUID.randomUUID().toString(), name = "Exponent",    type = cardType.EXPONENT,    operator = Operator.POWER)
+        // Variables
+        "var_a"      -> cardGame(id = UUID.randomUUID().toString(), name = "a",           type = cardType.VARIABLE,    operator = Operator.VAR_A)
+        "var_b"      -> cardGame(id = UUID.randomUUID().toString(), name = "b",           type = cardType.VARIABLE,    operator = Operator.VAR_B)
+        "var_c"      -> cardGame(id = UUID.randomUUID().toString(), name = "c",           type = cardType.VARIABLE,    operator = Operator.VAR_C)
+        "var_d"      -> cardGame(id = UUID.randomUUID().toString(), name = "d",           type = cardType.VARIABLE,    operator = Operator.VAR_D)
+        "var_x"      -> cardGame(id = UUID.randomUUID().toString(), name = "x",           type = cardType.VARIABLE,    operator = Operator.VAR_X)
+        "var_y"      -> cardGame(id = UUID.randomUUID().toString(), name = "y",           type = cardType.VARIABLE,    operator = Operator.VAR_Y)
+        "var_z"      -> cardGame(id = UUID.randomUUID().toString(), name = "z",           type = cardType.VARIABLE,    operator = Operator.VAR_Z)
+        // Parentheses
+        "left_paren"  -> cardGame(id = UUID.randomUUID().toString(), name = "(",          type = cardType.PARENTHESIS, operator = Operator.LEFT_PAREN)
+        "right_paren" -> cardGame(id = UUID.randomUUID().toString(), name = ")",          type = cardType.PARENTHESIS, operator = Operator.RIGHT_PAREN)
         // Numbers (catch-all)
         else -> {
             val numberValue = cardString.toIntOrNull()
@@ -296,8 +317,6 @@ fun AppNavigation(
             )
         }
 
-
-
         composable(NavRoutes.GameSingle) {
             GameView(
                 initialDeck = currentDeck,
@@ -341,7 +360,6 @@ fun AppNavigation(
             )
         }
 
-        // LocalMultiplayer now receives savedDecks for deck selection
         composable(NavRoutes.LocalMultiplayer) {
             LocalMultiplayer(
                 availableDecks = savedDecks,
@@ -353,7 +371,6 @@ fun AppNavigation(
             )
         }
 
-        // Online multiplayer entry (Host / Join by Code / Public Lobbies)
         composable(NavRoutes.OnlineMultiplayer) {
             OnlineMultiplayerEntryScreen(
                 onNavigateToLobby = { lobbyId ->
@@ -363,7 +380,6 @@ fun AppNavigation(
             )
         }
 
-        // Lobby waiting room
         composable("${NavRoutes.OnlineLobby}/{lobbyId}") { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: return@composable
             OnlineLobbyScreen(
@@ -381,7 +397,6 @@ fun AppNavigation(
             )
         }
 
-        // Online game screen
         composable("${NavRoutes.OnlineGame}/{lobbyId}") { backStackEntry ->
             val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: return@composable
             GameViewMultiOnline(

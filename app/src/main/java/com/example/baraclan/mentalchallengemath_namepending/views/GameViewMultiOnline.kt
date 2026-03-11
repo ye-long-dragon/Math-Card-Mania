@@ -3,6 +3,10 @@ package com.example.baraclan.mentalchallengemath_namepending.views
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,6 +57,7 @@ fun GameViewMultiOnline(
     var currentTurn by remember { mutableStateOf(1) }
     var currentGoalIndex by remember { mutableStateOf(0) }
     val deckSnapshot = remember { playerDeck.getAllCardsWithCounts().toMap() }
+    var variableState by remember { mutableStateOf(VariableState.newGame()) }
     var gameDeckState by remember { mutableStateOf(deck("Online Game Deck")) }
     var playerHandState by remember { mutableStateOf(hand("Online Hand")) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
@@ -129,6 +134,7 @@ fun GameViewMultiOnline(
     // ── Start new round ───────────────────────────────────────
     val startNewRound: () -> Unit = {
         if (currentGoalIndex < gameGoals.size) {
+            variableState = variableState.newGoal()
             gameDeckState = deck(playerDeck.name, deckSnapshot)
             playerHandState = RandomHand(gameDeckState)
             equationCards.clear()
@@ -205,7 +211,7 @@ fun GameViewMultiOnline(
     // ── Submit logic (matches GameView exactly) ───────────────
     val onSubmit: () -> Unit = {
         try {
-            val resultDouble = PemdasEvaluator.evaluate(equationCards)
+            val resultDouble = PemdasEvaluator.evaluate(equationCards.map { variableState.resolve(it) })
             equationCards.forEach { cardBin.addCard(it, 1) }
             equationCards.clear()
 

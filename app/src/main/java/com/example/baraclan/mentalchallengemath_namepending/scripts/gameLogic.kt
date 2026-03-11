@@ -121,6 +121,10 @@ fun getEquationString(equation: List<cardGame>): String {
                 }
             }
 
+            cardType.VARIABLE -> sb.append(card.displayLabel())
+
+            cardType.PARENTHESIS -> sb.append(card.displayLabel())
+
             cardType.FRACTION -> {
                 val num = equation.getOrNull(i + 1)
                 val den = equation.getOrNull(i + 2)
