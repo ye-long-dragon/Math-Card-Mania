@@ -118,7 +118,6 @@ fun LocalMultiplayer(
                 winner = winner,
                 timeSeconds = winnerTimeSeconds,
                 onPlayAgain = {
-                    // Reset everything
                     player1Deck = null
                     player2Deck = null
                     decksSelected = false
@@ -301,8 +300,11 @@ fun HalfScreen(
     var gameFinished by remember { mutableStateOf(false) }
     val deckSnapshot = remember { initialDeck.getAllCardsWithCounts().toMap() }
     var variableState by remember { mutableStateOf(VariableState.newGame()) }
-    var gameDeckState by remember { mutableStateOf(deck("Game Deck Copy")) }
-    var playerHandState by remember { mutableStateOf(hand("Player's Current Hand")) }
+
+    // ── FIX: initialize deck and hand immediately so first frame has cards ──
+    val initialGameDeck = remember { deck(initialDeck.name, deckSnapshot) }
+    var gameDeckState by remember { mutableStateOf(initialGameDeck) }
+    var playerHandState by remember { mutableStateOf(RandomHand(initialGameDeck)) }
     val equationCards = remember { mutableStateListOf<cardGame>() }
     var cardBin by remember { mutableStateOf(collection("Card Bin")) }
     var showDeckOverlay by remember { mutableStateOf(false) }
@@ -310,8 +312,9 @@ fun HalfScreen(
     val startNewRound: () -> Unit = {
         if (currentGoalIndex < gameGoals.size) {
             variableState = variableState.newGoal()
-            gameDeckState = deck(initialDeck.name, deckSnapshot)
-            playerHandState = RandomHand(gameDeckState)
+            val freshDeck = deck(initialDeck.name, deckSnapshot)
+            gameDeckState = freshDeck
+            playerHandState = RandomHand(freshDeck)
             equationCards.clear()
             cardBin = collection("Card Bin")
             currentTurn = 1
@@ -321,7 +324,8 @@ fun HalfScreen(
         }
     }
 
-    LaunchedEffect(Unit) { startNewRound() }
+    // No longer needed for initial load — only call on subsequent rounds
+    // LaunchedEffect(Unit) { startNewRound() }  ← REMOVED (caused empty first frame)
 
     val onHandCardClick: (cardGame) -> Unit = { clickedCard ->
         if (playerHandState.contains(clickedCard)) {
@@ -337,12 +341,10 @@ fun HalfScreen(
         }
     }
 
-    // Progress indicator (e.g. "Goal 2 / 5")
     val progressText = if (!gameFinished)
         "Goal ${currentGoalIndex + 1} / ${gameGoals.size}"
     else ""
 
-    // Deck overlay for this player's half
     if (showDeckOverlay) {
         ShowDeckOverlay(
             allDeckCards = initialDeck.getAllCardsAsList(),
@@ -357,14 +359,12 @@ fun HalfScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // ── Top section: scrollable content ──────────────────
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Progress
             if (progressText.isNotEmpty()) {
                 Text(
                     text = progressText,
@@ -377,25 +377,47 @@ fun HalfScreen(
 
             statusBar(currentScore, currentTurn)
 
-            goal(gameGoals = gameGoals.subList(currentGoalIndex, gameGoals.size))
+            // ── Compact inline goal ───────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Goal: ",
+                    fontFamily = Pixel,
+                    fontSize = 11.sp,
+                    color = BlackBoardYellow.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = if (gameGoals.isNotEmpty()) gameGoals[currentGoalIndex].toString() else "-",
+                    fontFamily = Pixel,
+                    fontSize = 16.sp,
+                    color = BlackBoardYellow
+                )
+            }
 
             EquationDisplay(
                 equationElements = equationCards,
-                onCardClick = onEquationCardClick
+                onCardClick = onEquationCardClick,
+                modifier = Modifier.heightIn(max = 80.dp)
             )
 
             Text(
-                text = "Select cards from your hand:",
+                text = "Your hand:",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 2.dp),
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Pixel,
+                fontSize = 10.sp,
                 color = BlackBoardYellow
             )
 
             InputCardsDisplay(playerHand = playerHandState, onCardClick = onHandCardClick)
         }
 
-        // ── Bottom section: buttons always visible ────────────
+        // ── Bottom buttons ────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
