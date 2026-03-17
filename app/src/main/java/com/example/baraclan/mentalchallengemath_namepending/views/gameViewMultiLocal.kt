@@ -331,13 +331,20 @@ fun HalfScreen(
         if (playerHandState.contains(clickedCard)) {
             playerHandState.removeCard(clickedCard, 1)
             equationCards.add(clickedCard)
+            // Reassign to trigger Compose recomposition (hand is a mutable class, not value type)
+            playerHandState = hand("Player's Current Hand").also { h ->
+                playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
+            }
         }
     }
 
     val onEquationCardClick: (cardGame) -> Unit = { clickedCard ->
         if (equationCards.contains(clickedCard)) {
             equationCards.remove(clickedCard)
-            playerHandState.addCard(clickedCard, 1)
+            playerHandState = hand("Player's Current Hand").also { h ->
+                playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
+                h.addCard(clickedCard, 1)
+            }
         }
     }
 
@@ -399,6 +406,18 @@ fun HalfScreen(
                 )
             }
 
+            // ── Variable values ───────────────────────────────
+            Text(
+                text = variableState.displayString(),
+                fontFamily = Pixel,
+                fontSize = 9.sp,
+                color = BlackBoardYellow.copy(alpha = 0.8f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 1.dp)
+            )
+
             EquationDisplay(
                 equationElements = equationCards,
                 onCardClick = onEquationCardClick,
@@ -459,8 +478,12 @@ fun HalfScreen(
 
             Button(
                 onClick = {
-                    equationCards.forEach { card -> playerHandState.addCard(card, 1) }
+                    val returnCards = equationCards.toList()
                     equationCards.clear()
+                    playerHandState = hand("Player's Current Hand").also { h ->
+                        playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
+                        returnCards.forEach { card -> h.addCard(card, 1) }
+                    }
                 },
                 modifier = Modifier.weight(1f)
             ) {

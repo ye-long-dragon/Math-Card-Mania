@@ -320,6 +320,7 @@ fun AppNavigation(
         composable(NavRoutes.GameSingle) {
             GameView(
                 initialDeck = currentDeck,
+                availableDecks = savedDecks,
                 onGameComplete = {
                     navController.navigate(NavRoutes.Menu) {
                         popUpTo(NavRoutes.GameSingle) { inclusive = true }

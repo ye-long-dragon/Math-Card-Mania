@@ -73,10 +73,19 @@ object DeckRepository {
             val deckObj = JSONObject()
             deckObj.put("name", d.name)
             val cardsArray = JSONArray()
+
+            // Group by card.name and sum counts.
+            // This handles the case where multiple clones of the same card type
+            // end up as separate map entries (different UUIDs but same logical card).
+            val grouped = mutableMapOf<String, Int>()
             d.getAllCardsWithCounts().forEach { (card, count) ->
+                grouped[card.name] = (grouped[card.name] ?: 0) + count
+            }
+
+            grouped.forEach { (cardName, totalCount) ->
                 val cardObj = JSONObject()
-                cardObj.put("cardName", card.name)      // adjust field names to match your cardGame model
-                cardObj.put("count", count)
+                cardObj.put("cardName", cardName)
+                cardObj.put("count", totalCount)
                 cardsArray.put(cardObj)
             }
             deckObj.put("cards", cardsArray)

@@ -79,71 +79,86 @@ fun evaluateEquationRounded(equation: List<cardGame>): Double? {
 fun getEquationString(equation: List<cardGame>): String {
     val sb = StringBuilder()
     var i = 0
+
+    // Returns a display string for the "slot" starting at index idx,
+    // plus the next index after consuming it.
+    fun slotStr(idx: Int): Pair<String, Int> {
+        if (idx >= equation.size) return Pair("?", idx)
+        val c = equation[idx]
+        return when {
+            c.isValue() -> Pair(c.displayLabel(), idx + 1)
+            c.isPrefixFunction() -> {
+                val fnName = when (c.operator) {
+                    Operator.SIN -> "sin"; Operator.COS -> "cos"
+                    Operator.LN -> "ln";  Operator.LOG10 -> "log₁₀"; else -> "?"
+                }
+                val (argStr, next) = slotStr(idx + 1)
+                Pair("$fnName($argStr)", next)
+            }
+            c.type == cardType.FRACTION -> {
+                val (numStr, a2) = slotStr(idx + 1)
+                val (denStr, a3) = slotStr(a2)
+                Pair("($numStr/$denStr)", a3)
+            }
+            c.type == cardType.EXPONENT -> {
+                val (baseStr, a2) = slotStr(idx + 1)
+                val (expStr,  a3) = slotStr(a2)
+                Pair("$baseStr^$expStr", a3)
+            }
+            c.isLeftParen() -> {
+                // Collect interior up to matching ')'
+                var depth = 1; var j = idx + 1
+                while (j < equation.size && depth > 0) {
+                    when { equation[j].isLeftParen() -> depth++; equation[j].isRightParen() -> depth-- }
+                    j++
+                }
+                val interior = equation.subList(idx + 1, j - 1)
+                val innerStr = if (interior.isEmpty()) "" else getEquationString(interior)
+                Pair("($innerStr)", j)
+            }
+            else -> Pair(c.displayLabel(), idx + 1)
+        }
+    }
+
     while (i < equation.size) {
         val card = equation[i]
         when (card.type) {
-            cardType.NUMBER -> sb.append(card.numberValue)
+            cardType.NUMBER    -> { sb.append(card.numberValue); i++ }
+            cardType.VARIABLE  -> { sb.append(card.displayLabel()); i++ }
+            cardType.CONSTANT  -> { sb.append(card.displayLabel()); i++ }
+            cardType.PARENTHESIS -> { sb.append(card.displayLabel()); i++ }
 
-            cardType.OPERATOR -> sb.append(
-                when (card.operator) {
-                    Operator.ADD -> " + "
-                    Operator.SUBTRACT -> " − "
-                    Operator.MULTIPLY -> " × "
-                    Operator.DIVIDE -> " ÷ "
-                    else -> " ? "
-                }
-            )
-
-            cardType.CONSTANT -> sb.append(
-                when (card.operator) {
-                    Operator.PI -> "π"
-                    Operator.EULER -> "e"
-                    else -> "?"
-                }
-            )
+            cardType.OPERATOR -> {
+                sb.append(when (card.operator) {
+                    Operator.ADD -> " + "; Operator.SUBTRACT -> " − "
+                    Operator.MULTIPLY -> " × "; Operator.DIVIDE -> " ÷ "; else -> " ? "
+                }); i++
+            }
 
             cardType.FUNCTION -> {
                 val fnName = when (card.operator) {
-                    Operator.SIN -> "sin"
-                    Operator.COS -> "cos"
-                    Operator.LN -> "ln"
-                    Operator.LOG10 -> "log₁₀"
-                    else -> "?"
+                    Operator.SIN -> "sin"; Operator.COS -> "cos"
+                    Operator.LN -> "ln";  Operator.LOG10 -> "log₁₀"; else -> "?"
                 }
-                // Peek at next card to show sin(x) style
-                val nextCard = equation.getOrNull(i + 1)
-                if (nextCard != null && nextCard.isValue()) {
-                    sb.append("$fnName(${nextCard.resolvedValue()?.let { formatDouble(it) } ?: "?"})")
-                    i += 2
-                    continue
-                } else {
-                    sb.append("$fnName(?)")
-                }
+                val (argStr, next) = slotStr(i + 1)
+                sb.append("$fnName($argStr)")
+                i = next
             }
 
-            cardType.VARIABLE -> sb.append(card.displayLabel())
-
-            cardType.PARENTHESIS -> sb.append(card.displayLabel())
-
             cardType.FRACTION -> {
-                val num = equation.getOrNull(i + 1)
-                val den = equation.getOrNull(i + 2)
-                val numStr = num?.resolvedValue()?.let { formatDouble(it) } ?: "?"
-                val denStr = den?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                val (numStr, a2) = slotStr(i + 1)
+                val (denStr, a3) = slotStr(a2)
                 sb.append("($numStr/$denStr)")
-                if (num != null && den != null) { i += 3; continue }
+                i = a3
             }
 
             cardType.EXPONENT -> {
-                val base = equation.getOrNull(i + 1)
-                val exp = equation.getOrNull(i + 2)
-                val baseStr = base?.resolvedValue()?.let { formatDouble(it) } ?: "?"
-                val expStr = exp?.resolvedValue()?.let { formatDouble(it) } ?: "?"
+                val (baseStr, a2) = slotStr(i + 1)
+                val (expStr,  a3) = slotStr(a2)
                 sb.append("$baseStr^$expStr")
-                if (base != null && exp != null) { i += 3; continue }
+                i = a3
             }
         }
-        i++
     }
     return sb.toString()
 }

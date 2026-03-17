@@ -123,10 +123,13 @@ fun GameViewMultiOnline(
 
     // ── Refill hand to 8 cards (matches GameView) ─────────────
     fun refillHandToCapacity() {
-        while (playerHandState.getTotalCount() < 8 && !gameDeckState.isEmpty()) {
-            val drawn = gameDeckState.drawCard()
-            if (drawn != null) playerHandState.addCard(drawn, 1)
+        val updated = hand("Online Hand").also { h ->
+            playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
         }
+        while (updated.getTotalCount() < 8 && !gameDeckState.isEmpty()) {
+            gameDeckState.drawCard()?.let { updated.addCard(it, 1) }
+        }
+        playerHandState = updated
     }
 
     fun canDiscard() = equationCards.isNotEmpty()
@@ -174,12 +177,20 @@ fun GameViewMultiOnline(
 
     // ── Card movement (matches GameView) ─────────────────────
     val moveCardToEquation: (cardGame) -> Unit = { card ->
-        if (playerHandState.getCardCount(card) >= 1)
+        if (playerHandState.getCardCount(card) >= 1) {
             transferCards(card, 1, playerHandState, equationCardsContainer)
+            playerHandState = hand("Online Hand").also { h ->
+                playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
+            }
+        }
     }
     val moveCardToHand: (cardGame) -> Unit = { card ->
-        if (equationCardsContainer.getCardCount(card) >= 1)
+        if (equationCardsContainer.getCardCount(card) >= 1) {
             transferCards(card, 1, equationCardsContainer, playerHandState)
+            playerHandState = hand("Online Hand").also { h ->
+                playerHandState.getAllCardsWithCounts().forEach { (c, n) -> h.addCard(c, n) }
+            }
+        }
     }
     val onHandCardClick: (cardGame) -> Unit = { clickedCard ->
         if (draggedCard != null && dragSource == "hand") {
@@ -339,7 +350,17 @@ fun GameViewMultiOnline(
 
         goal(gameGoals.subList(currentGoalIndex, gameGoals.size))
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // ── Variable values ───────────────────────────────────
+        Text(
+            text = variableState.displayString(),
+            fontSize = 10.sp,
+            color = BlackBoardYellow.copy(alpha = 0.8f),
+            fontFamily = Pixel,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Equation display with PEMDAS live result
         Column(

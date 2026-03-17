@@ -3,19 +3,22 @@ package com.example.baraclan.mentalchallengemath_namepending.models
 import java.util.Stack
 import kotlin.math.*
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // PemdasEvaluator
 //
-// NUMBER + NUMBER adjacent        → concatenate digits (1,2 = 12)
-// NUMBER + VARIABLE/CONSTANT      → multiply (12,a = 12×a)
-// VARIABLE/CONSTANT + anything    → multiply (a,b = a×b)
-// Value + (                       → multiply (3,(x+1) = 3×(x+1))
+// NUMBER + NUMBER adjacent        → concatenate digits  (1,2 → 12)
+// NUMBER + VARIABLE/CONSTANT      → multiply            (12,a → 12×a)
+// VARIABLE/CONSTANT + anything    → multiply            (a,b → a×b)
+// Value + (                       → multiply            (3,(x+1) → 3×(x+1))
 // ) + Value                       → multiply
-// ─────────────────────────────────────────────────────────────
+//
+// Functions/Exponents/Fractions accept a parenthesised group as their argument:
+//   sin > ( > cards > )          → sin( evaluated_group )
+//   Exponent > ( > ... > ) > ( > ... > )  → base^exp
+// ─────────────────────────────────────────────────────────────────────────────
 object PemdasEvaluator {
 
     private sealed class Token {
-        // isLiteral = came from a NUMBER card (single digit)
         data class Value(val v: Double, val isLiteral: Boolean = false) : Token()
         data class BinOp(val op: Operator) : Token()
         object LParen : Token()
@@ -55,34 +58,74 @@ object PemdasEvaluator {
 
     // ─────────────────────────────────────────────────────────
     // resolveSlot — recursively resolves one value-producing slot.
+    //
+    // A "slot" can be:
+    //   • A simple value card (NUMBER / VARIABLE / CONSTANT)
+    //   • A prefix-function card followed by one slot or a parenthesised group
+    //   • An EXPONENT card followed by two slots/groups  (base ^ exp)
+    //   • A FRACTION card followed by two slots/groups   (num / den)
+    //   • A parenthesised group: LEFT_PAREN … RIGHT_PAREN
+    //     (the interior is fully evaluated via a recursive evaluate call)
+    //
     // Returns (resolvedDouble, nextIndex).
     // ─────────────────────────────────────────────────────────
     private fun resolveSlot(cards: List<cardGame>, i: Int): Pair<Double, Int> {
         require(i < cards.size) { "Expected a value but reached end of expression." }
         val card = cards[i]
         return when {
+            // ── Simple value ──────────────────────────────────
             card.isValue() -> {
                 val v = card.resolvedValue()
-                    ?: throw IllegalArgumentException("'${card.name}' has no resolved value (inject VariableState first).")
+                    ?: throw IllegalArgumentException(
+                        "'${card.name}' has no resolved value (inject VariableState first)."
+                    )
                 Pair(v, i + 1)
             }
+
+            // ── Prefix function (sin, cos, ln, log10) ─────────
             card.isPrefixFunction() -> {
                 val (arg, next) = resolveSlot(cards, i + 1)
                 Pair(applyFunction(card.operator!!, arg), next)
             }
+
+            // ── Fraction ──────────────────────────────────────
             card.type == cardType.FRACTION -> {
                 val (num, a2) = resolveSlot(cards, i + 1)
                 val (den, a3) = resolveSlot(cards, a2)
                 require(den != 0.0) { "Fraction denominator is zero." }
                 Pair(num / den, a3)
             }
+
+            // ── Exponent (base ^ exp) ─────────────────────────
             card.type == cardType.EXPONENT -> {
                 val (base, a2) = resolveSlot(cards, i + 1)
                 val (exp,  a3) = resolveSlot(cards, a2)
                 Pair(base.pow(exp), a3)
             }
+
+            // ── Parenthesised group ───────────────────────────
+            // Collect all cards between the matching ( … ) and
+            // evaluate them as a sub-expression.
+            card.isLeftParen() -> {
+                var depth = 1
+                var j = i + 1
+                while (j < cards.size && depth > 0) {
+                    when {
+                        cards[j].isLeftParen()  -> depth++
+                        cards[j].isRightParen() -> depth--
+                    }
+                    j++
+                }
+                require(depth == 0) { "Mismatched parentheses in sub-expression." }
+                // cards[i+1 .. j-2] is the interior (j-1 is the closing paren)
+                val interior = cards.subList(i + 1, j - 1)
+                require(interior.isNotEmpty()) { "Empty parentheses are not allowed." }
+                val value = evaluate(interior)   // recursive full evaluation
+                Pair(value, j)                   // j already points past the ')'
+            }
+
             else -> throw IllegalArgumentException(
-                "Expected value/function/fraction/exponent at position $i, got '${card.type}'."
+                "Expected value/function/fraction/exponent/( at position $i, got '${card.type}'."
             )
         }
     }
@@ -90,6 +133,9 @@ object PemdasEvaluator {
     // ─────────────────────────────────────────────────────────
     // resolveToTokens — walks the top-level card list into a
     // flat token stream, tagging NUMBER-sourced values as literals.
+    // Parentheses that appear at the TOP level (not consumed by
+    // resolveSlot) are kept as LParen/RParen tokens for the
+    // shunting-yard algorithm.
     // ─────────────────────────────────────────────────────────
     private fun resolveToTokens(cards: List<cardGame>): List<Token> {
         val tokens = mutableListOf<Token>()
@@ -104,7 +150,6 @@ object PemdasEvaluator {
                 card.isValue() || card.isPrefixFunction() ||
                         card.type == cardType.FRACTION || card.type == cardType.EXPONENT -> {
                     val (v, next) = resolveSlot(cards, i)
-                    // Only single NUMBER cards are literals; functions/fractions/exponents are not
                     val isLit = card.type == cardType.NUMBER
                     tokens.add(Token.Value(v, isLiteral = isLit))
                     i = next
@@ -116,7 +161,7 @@ object PemdasEvaluator {
                             (tokens.isEmpty() || tokens.last() is Token.BinOp || tokens.last() is Token.LParen)
                     if (isUnary) {
                         val (v, next) = resolveSlot(cards, i + 1)
-                        val nextIsLit = cards[i + 1].type == cardType.NUMBER
+                        val nextIsLit = i + 1 < cards.size && cards[i + 1].type == cardType.NUMBER
                         val signed = if (op == Operator.SUBTRACT) -v else v
                         tokens.add(Token.Value(signed, isLiteral = nextIsLit))
                         i = next
@@ -137,8 +182,8 @@ object PemdasEvaluator {
     // ─────────────────────────────────────────────────────────
     // collapseAndImplicit
     //
-    // Pass 1 — collapse runs of adjacent NUMBER literals into one:
-    //   [1,isLit] [2,isLit] → [12,isLit]
+    // Pass 1 — collapse runs of adjacent NUMBER literals:
+    //   [1,lit] [2,lit] → [12,lit]
     //
     // Pass 2 — insert implicit × where needed:
     //   literal + non-literal value  → × (12a)

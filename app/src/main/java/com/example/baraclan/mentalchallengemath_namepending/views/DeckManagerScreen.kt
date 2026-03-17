@@ -69,9 +69,9 @@ fun DeckManagerScreen(
                 onCollectionCardClick = { cardToAdd ->
                     scope.launch {
                         val updated = deck(deckToEdit.name, deckToEdit.getAllCardsWithCounts())
-                        // Always create a fresh card with a new UUID so deck IDs stay unique
-                        val freshCard = cloneCardWithNewId(cardToAdd)
-                        updated.addCard(freshCard, 1)
+                        // Add directly by card name-identity — serializeDecks groups by name
+                        // so multiple taps correctly accumulate count without UUID collisions.
+                        updated.addCard(cardToAdd, 1)
                         DeckRepository.saveDeck(context, updated)
                     }
                 }
@@ -232,15 +232,20 @@ fun DeckManagerScreen(
                         val isSelected = d.name in selectedForDelete
                         // Compute deck validation warning inline
                         val dCards = d.getAllCardsAsList()
+                        val dTotal = d.getTotalCount()
                         val dOpCount = dCards.count { it.type == cardType.OPERATOR }
+                        // FUNCTION = sin/cos/ln/log10 only. VARIABLE (a-z) is separate — never counted as function.
+                        val dFnCount = dCards.count { it.type == cardType.FUNCTION }
                         val dVarOps = listOf(Operator.VAR_A, Operator.VAR_B, Operator.VAR_C, Operator.VAR_D,
                             Operator.VAR_X, Operator.VAR_Y, Operator.VAR_Z)
                         val dMissingVars = dVarOps.filter { op -> dCards.none { it.type == cardType.VARIABLE && it.operator == op } }
                         val dWarning: String? = when {
-                            d.getTotalCount() > 30      -> "Too many cards (max 30)"
-                            dOpCount < 5                -> "Need ≥5 operators (have $dOpCount)"
-                            dMissingVars.isNotEmpty()   -> "Missing: ${dMissingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}"
-                            else                        -> null
+                            dTotal > 30               -> "Too many cards (max 30)"
+                            dTotal < 20               -> "Too few cards (min 20)"
+                            dOpCount < 5              -> "Need ≥5 operators (+−×÷) (have $dOpCount)"
+                            dFnCount < 5              -> "Need ≥5 functions (sin/cos/ln/log) (have $dFnCount)"
+                            dMissingVars.isNotEmpty() -> "Missing vars: ${dMissingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}"
+                            else                      -> null
                         }
                         DeckManagerTile(
                             deckName = d.name,
@@ -325,10 +330,10 @@ fun DeckManagerTile(
                         color = Color.Black
                     )
                     Text(
-                        text = "$cardCount / 30 cards",
+                        text = "$cardCount cards  (safe: 20–30)",
                         fontFamily = Pixel,
                         fontSize = 12.sp,
-                        color = if (cardCount > 30) MaterialTheme.colorScheme.error else Color.DarkGray
+                        color = if (cardCount > 30 || cardCount < 20) MaterialTheme.colorScheme.error else Color.DarkGray
                     )
                 }
                 if (!inSelectionMode) {

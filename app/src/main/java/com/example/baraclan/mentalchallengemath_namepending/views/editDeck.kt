@@ -31,22 +31,28 @@ fun EditDeckScreen(
 
     var saveStatus by remember { mutableStateOf<String?>(null) }
 
-    // ── Deck validation rules ─────────────────────────────────
-    // Max 30 cards, min 5 operators, min 1 of every variable letter
-    val allCards = cardDeck.getAllCardsAsList()
-    val isOverLimit  = cardCount > 30
+    // ── Deck validation — safe range 20-30 cards ─────────────
+    val allCards     = cardDeck.getAllCardsAsList()
+    val isTooMany    = cardCount > 30
+    val isTooFew     = cardCount < 20
+    // OPERATOR = +/-/×/÷ only.  FUNCTION = sin/cos/ln/log10 only.
+    // VARIABLE (a-z) is its own type — never counted as a function.
     val opCount      = allCards.count { it.type == cardType.OPERATOR }
+    val fnCount      = allCards.count { it.type == cardType.FUNCTION }
+    val varCount     = allCards.count { it.type == cardType.VARIABLE }
     val hasEnoughOps = opCount >= 5
+    val hasEnoughFns = fnCount >= 5
     val varOps = listOf(Operator.VAR_A, Operator.VAR_B, Operator.VAR_C, Operator.VAR_D,
         Operator.VAR_X, Operator.VAR_Y, Operator.VAR_Z)
     val missingVars  = varOps.filter { op -> allCards.none { it.type == cardType.VARIABLE && it.operator == op } }
-    val deckValid    = !isOverLimit && hasEnoughOps && missingVars.isEmpty()
+    val deckValid    = !isTooMany && !isTooFew && hasEnoughOps && hasEnoughFns && missingVars.isEmpty()
 
-    val validationMsg: String? = when {
-        isOverLimit      -> "Too many cards! Max 30 (currently $cardCount)"
-        !hasEnoughOps    -> "Need at least 5 operator cards (have $opCount)"
-        missingVars.isNotEmpty() -> "Missing variables: ${missingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}"
-        else             -> null
+    val validationIssues = buildList {
+        if (isTooMany)                add("Too many cards — max 30 (have $cardCount)")
+        if (isTooFew)                 add("Too few cards — min 20 (have $cardCount)")
+        if (!hasEnoughOps)            add("Need ≥5 operators (+−×÷) (have $opCount)")
+        if (!hasEnoughFns)            add("Need ≥5 functions (sin/cos/ln/log) (have $fnCount)")
+        if (missingVars.isNotEmpty()) add("Missing variables: ${missingVars.joinToString { it.name.removePrefix("VAR_").lowercase() }}")
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -67,7 +73,7 @@ fun EditDeckScreen(
 
         // ── Deck count (red if over limit) ────────────────────
         Text(
-            text = "Your Played Deck ($cardCount/30)" + if (validationMsg != null) " ⚠" else " ✓",
+            text = "Your Deck  $cardCount cards" + if (deckValid) "  ✓" else "  ⚠ ${validationIssues.size} issue(s)",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
@@ -75,22 +81,28 @@ fun EditDeckScreen(
                 fontFamily = Pixel,
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
-                color = if (validationMsg != null) MaterialTheme.colorScheme.error else BlackBoardYellow
+                color = if (deckValid) BlackBoardYellow else MaterialTheme.colorScheme.error
             )
         )
 
-        // ── Validation hint ───────────────────────────────────
-        if (validationMsg != null) {
-            Text(
-                text = validationMsg!!,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = Pixel,
-                    textAlign = TextAlign.Center,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
-            )
+        // ── Validation hints ──────────────────────────────────
+        if (validationIssues.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                validationIssues.forEach { issue ->
+                    Text(
+                        text = "• $issue",
+                        fontFamily = Pixel,
+                        textAlign = TextAlign.Center,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
 
         // ── Deck horizontal scroll ────────────────────────────
@@ -164,8 +176,8 @@ fun EditDeckScreen(
             // Save deck button
             Button(
                 onClick = {
-                    if (validationMsg != null) {
-                        saveStatus = validationMsg
+                    if (!deckValid) {
+                        saveStatus = validationIssues.first()
                         return@Button
                     }
                     scope.launch {
