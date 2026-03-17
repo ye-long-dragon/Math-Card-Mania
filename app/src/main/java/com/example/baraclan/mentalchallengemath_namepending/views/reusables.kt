@@ -317,7 +317,7 @@ public fun InputCardsDisplay(
 }
 
 @Composable
-fun statusBar(score: Int, turn: Int, modifier: Modifier = Modifier) {
+fun statusBar(score: Int, turn: Int = 0, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -332,12 +332,14 @@ fun statusBar(score: Int, turn: Int, modifier: Modifier = Modifier) {
             color = White,
             fontFamily = Pixel
         )
-        Text(
-            "Turn: $turn",
-            style = MaterialTheme.typography.titleMedium,
-            color = White,
-            fontFamily = Pixel
-        )
+        if (turn > 0) {
+            Text(
+                "Turn: $turn",
+                style = MaterialTheme.typography.titleMedium,
+                color = White,
+                fontFamily = Pixel
+            )
+        }
     }
 }
 
@@ -346,26 +348,26 @@ fun goal(gameGoals: List<Double>, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             "Current Goal:",
-            style = MaterialTheme.typography.headlineSmall,
+            fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onBackground,
             fontFamily = Pixel
         )
         if (gameGoals.isNotEmpty()) {
             Text(
                 gameGoals.first().toString(),
-                style = MaterialTheme.typography.displaySmall,
+                fontSize = 22.sp,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontFamily = Pixel
             )
         } else {
             Text(
                 "No Goal Set",
-                style = MaterialTheme.typography.displaySmall,
+                fontSize = 22.sp,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontFamily = Pixel
             )

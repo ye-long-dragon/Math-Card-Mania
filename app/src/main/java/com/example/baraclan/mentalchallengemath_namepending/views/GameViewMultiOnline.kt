@@ -54,7 +54,6 @@ fun GameViewMultiOnline(
 
     // ── Game state (mirrors GameView) ─────────────────────────
     var currentScore by remember { mutableStateOf(0) }
-    var currentTurn by remember { mutableStateOf(1) }
     var currentGoalIndex by remember { mutableStateOf(0) }
     val deckSnapshot = remember { playerDeck.getAllCardsWithCounts().toMap() }
     var variableState by remember { mutableStateOf(VariableState.newGame()) }
@@ -94,7 +93,6 @@ fun GameViewMultiOnline(
                 equationCards.forEach { cardBin.addCard(it, 1) }
                 equationCards.clear()
                 currentGoalIndex++
-                currentTurn = 1
                 if (currentGoalIndex >= gameGoals.size) {
                     iFinished = true
                     scope.launch {
@@ -108,16 +106,21 @@ fun GameViewMultiOnline(
 
     // ── Margin of error (matches GameView exactly) ────────────
     fun getMarginOfError(round: Int): Double = when {
-        round >= 9 -> 0.15
-        round >= 7 -> 0.10
-        round >= 4 -> 0.05
+        round >= 5 -> 0.15
+        round >= 4 -> 0.10
+        round >= 2 -> 0.05
         else -> 0.0
     }
 
     // ── Safe PEMDAS evaluation ────────────────────────────────
+    // Must resolve variable cards through variableState before evaluating,
+    // otherwise VARIABLE cards have variableValue=null and the evaluator throws.
     fun safeEvaluate(cards: List<cardGame>): Double? =
         if (cards.isEmpty()) null
-        else try { PemdasEvaluator.evaluate(cards) } catch (e: Exception) { null }
+        else try {
+            val resolved = cards.map { variableState.resolve(it) }
+            PemdasEvaluator.evaluate(resolved)
+        } catch (e: Exception) { null }
 
     val equationResult = derivedStateOf { safeEvaluate(equationCards) }
 
@@ -142,7 +145,6 @@ fun GameViewMultiOnline(
             playerHandState = RandomHand(gameDeckState)
             equationCards.clear()
             cardBin = collection("Card Bin")
-            currentTurn = 1
         } else {
             iFinished = true
             scope.launch {
@@ -221,35 +223,26 @@ fun GameViewMultiOnline(
 
     // ── Submit logic (matches GameView exactly) ───────────────
     val onSubmit: () -> Unit = {
-        try {
-            val resultDouble = PemdasEvaluator.evaluate(equationCards.map { variableState.resolve(it) })
-            equationCards.forEach { cardBin.addCard(it, 1) }
-            equationCards.clear()
+        // Multiplayer: 1 attempt per round — always advance regardless of hit/miss
+        val resultDouble = try {
+            PemdasEvaluator.evaluate(equationCards.map { variableState.resolve(it) })
+        } catch (e: Exception) { null }
 
-            val currentGoal = gameGoals.getOrNull(currentGoalIndex)
-            if (currentGoal != null) {
-                val round = (currentGoalIndex + 1).coerceIn(1, 10)
-                val margin = getMarginOfError(round)
-                val hit = if (margin == 0.0)
-                    kotlin.math.abs(resultDouble - currentGoal) < 0.0001
-                else
-                    resultDouble in (currentGoal * (1 - margin))..(currentGoal * (1 + margin))
+        equationCards.forEach { cardBin.addCard(it, 1) }
+        equationCards.clear()
 
-                if (hit) {
-                    currentScore += 100
-                    currentGoalIndex++
-                    startNewRound()
-                } else {
-                    currentTurn++
-                }
-            } else {
-                startNewRound()
-            }
-        } catch (e: Exception) {
-            equationCards.forEach { cardBin.addCard(it, 1) }
-            equationCards.clear()
-            currentTurn++
+        val currentGoal = gameGoals.getOrNull(currentGoalIndex)
+        if (currentGoal != null && resultDouble != null) {
+            val round = GoalGenerator.getMultiRoundNumber(currentGoalIndex).coerceIn(1, 5)
+            val margin = getMarginOfError(round)
+            val proximityScore = if (margin == 0.0 && kotlin.math.abs(resultDouble - currentGoal) < 0.0001) 100
+            else if (margin > 0.0 && resultDouble in (currentGoal * (1 - margin))..(currentGoal * (1 + margin))) 100
+            else 0
+            currentScore += proximityScore
         }
+
+        currentGoalIndex++
+        startNewRound()
         refillHandToCapacity()
     }
 
@@ -315,7 +308,7 @@ fun GameViewMultiOnline(
                 onShowDeck = { showDeckOverlay = true },
                 onOpenSettings = { showSettings = true }
             )
-            statusBar(currentScore, currentTurn)
+            statusBar(currentScore)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -324,7 +317,7 @@ fun GameViewMultiOnline(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Goal ${currentGoalIndex + 1}/${gameGoals.size}",
+                    text = "Round ${GoalGenerator.getMultiRoundNumber(currentGoalIndex)} / ${gameGoals.size}",
                     fontFamily = Pixel, color = BlackBoardYellow, fontSize = 12.sp
                 )
                 Text(
@@ -426,7 +419,6 @@ fun GameViewMultiOnline(
                         equationCards.forEach { cardBin.addCard(it, 1) }
                         equationCards.clear()
                         refillHandToCapacity()
-                        currentTurn++
                     }
                 },
                 enabled = canDiscard()

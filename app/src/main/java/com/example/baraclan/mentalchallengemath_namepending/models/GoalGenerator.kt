@@ -94,12 +94,13 @@ object GoalGenerator {
             (1..10).map { randomGoal(cls) }
         }
 
-    // 50 goals — 5 rounds × 10 goals each
+    // 5 goals — 1 per round (multiplayer: one attempt per round, scored on proximity)
     fun generateMultiplayerGoals(difficulty: Difficulty): List<Double> =
-        (1..5).flatMap { round ->
-            val cls = multiClass(round, difficulty)
-            (1..10).map { randomGoal(cls) }
-        }
+        (1..5).map { round -> randomGoal(multiClass(round, difficulty)) }
 
+    // Single-player: 10 attempts per goal, so round = goalIndex / 10
     fun getRoundNumber(goalIndex: Int): Int = (goalIndex / 10) + 1
+
+    // Multiplayer: 1 goal per round, so round = goalIndex + 1
+    fun getMultiRoundNumber(goalIndex: Int): Int = goalIndex + 1
 }

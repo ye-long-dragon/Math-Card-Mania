@@ -295,7 +295,6 @@ fun HalfScreen(
     onGameCompleted: () -> Unit
 ) {
     var currentScore by remember { mutableStateOf(0) }
-    var currentTurn by remember { mutableStateOf(1) }
     var currentGoalIndex by remember { mutableStateOf(0) }
     var gameFinished by remember { mutableStateOf(false) }
     val deckSnapshot = remember { initialDeck.getAllCardsWithCounts().toMap() }
@@ -317,7 +316,6 @@ fun HalfScreen(
             playerHandState = RandomHand(freshDeck)
             equationCards.clear()
             cardBin = collection("Card Bin")
-            currentTurn = 1
         } else {
             gameFinished = true
             onGameCompleted()
@@ -349,7 +347,7 @@ fun HalfScreen(
     }
 
     val progressText = if (!gameFinished)
-        "Goal ${currentGoalIndex + 1} / ${gameGoals.size}"
+        "Round ${GoalGenerator.getMultiRoundNumber(currentGoalIndex)} / ${gameGoals.size}"
     else ""
 
     if (showDeckOverlay) {
@@ -382,7 +380,7 @@ fun HalfScreen(
                 )
             }
 
-            statusBar(currentScore, currentTurn)
+            statusBar(currentScore)
 
             // ── Compact inline goal ───────────────────────────
             Row(
@@ -448,28 +446,25 @@ fun HalfScreen(
                 onClick = {
                     val equationResult: Double? = evaluateEquation(equationCards.map { variableState.resolve(it) })
                     val currentTargetGoal = gameGoals[currentGoalIndex]
-                    val round = (currentGoalIndex + 1).coerceIn(1, 10)
+                    val round = GoalGenerator.getMultiRoundNumber(currentGoalIndex).coerceIn(1, 5)
                     val margin = when {
-                        round >= 9 -> 0.15
-                        round >= 7 -> 0.10
-                        round >= 4 -> 0.05
+                        round >= 5 -> 0.15
+                        round >= 4 -> 0.10
+                        round >= 2 -> 0.05
                         else -> 0.0
                     }
-                    val hit = if (equationResult == null) false
-                    else if (margin == 0.0) kotlin.math.abs(equationResult - currentTargetGoal) < 0.0001
-                    else equationResult in (currentTargetGoal * (1 - margin))..(currentTargetGoal * (1 + margin))
+                    // Multiplayer: 1 attempt per round — always advance regardless of hit/miss
+                    // Score based on proximity: exact hit = 100, within margin = 50, miss = 0
+                    val proximityScore = if (equationResult == null) 0
+                    else if (margin == 0.0 && kotlin.math.abs(equationResult - currentTargetGoal) < 0.0001) 100
+                    else if (margin > 0.0 && equationResult in (currentTargetGoal * (1 - margin))..(currentTargetGoal * (1 + margin))) 100
+                    else 0
 
-                    if (hit) {
-                        equationCards.forEach { cardBin.addCard(it, 1) }
-                        equationCards.clear()
-                        currentScore += 100
-                        currentGoalIndex++
-                        startNewRound()
-                    } else {
-                        equationCards.forEach { cardBin.addCard(it, 1) }
-                        equationCards.clear()
-                        currentTurn++
-                    }
+                    equationCards.forEach { cardBin.addCard(it, 1) }
+                    equationCards.clear()
+                    currentScore += proximityScore
+                    currentGoalIndex++
+                    startNewRound()
                 },
                 modifier = Modifier.weight(1f)
             ) {
